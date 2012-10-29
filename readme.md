@@ -13,7 +13,7 @@ Put namespaces.el in your loadpath, then require it in your init.el:
 (require 'namespaces)
 ```
 
-### Optional Steps:
+### Optional Configuration
 
 1. Configure your package repositories, eg:
 
@@ -34,7 +34,7 @@ Put namespaces.el in your loadpath, then require it in your init.el:
    (setq *ns-base-path* "~/.emacs.d/lisp/")
    ```
 
-## Basic Usage:
+## Basic Usage
 
 ### Define namespaces and members
 
@@ -77,12 +77,16 @@ Other namespaces can now access that exported symbol by using direct qualificati
 (@ captain)                              ; => "Picard"
 ```
 
-### De Res Macronis Nomenspationem
+## De Res Macronis Nomenspationem
 
 The `namespace` macro is a versatile beast. It is used to import and export namespace symbols, load emacs
-features and download elisp packages. It takes a number of keyword arguments, which expect vectors as their values.
+features and download elisp packages.
 
-#### export
+### Keyword arguments.
+
+`namespace` takes a number of keyword arguments, which expect vectors as their values.
+
+#### :export
 
 Make the given functions or variables externally-accessible ('public').
 ```lisp
@@ -90,7 +94,7 @@ Make the given functions or variables externally-accessible ('public').
   :export [ x y z ... ])
 ```
 
-#### import
+#### :import
 
 Import public symbols from another namespace:
 ```lisp
@@ -109,7 +113,7 @@ by providing a list of symbols instead:
 ```
 The example above will import only `x` and `y` from namespace `foo`.
 
-#### use
+#### :use
 
 Load another elisp file from disk or require an emacs feature. Periods (`.`)
 are interpereted as path delimiters.
@@ -124,13 +128,30 @@ This example will attempt to load BASE/bar/baz.el, as well as a few emacs featur
      color-theme ])
 ```
 
-#### packages
+#### :packages
 
 Download the specified elisp packages, then require or autoload them.
 ```lisp
 (namespace foo
   :packages [ auto-complete ])
 ```
+
+### Dependency Forms and Autoloading
+
+In addition to *requiring* elisp features, the `:packages` and `:use` arguments allow you to autoload symbols:
+```lisp
+ (namespace clojure-conf
+   :packages
+   [ paredit
+     (nrepl nrepl-mode)
+     (clojure-mode (clojure-mode :interactive t)) ])
+ ```
+ In this example:
+   1. paredit is *required*, meaning it is eagerly loaded
+   2. `nrepl-mode` is autoloaded from the nrepl package, meaning it will be lazily loaded
+   3. `clojure-mode` is also autoloaded, with a nested form allowing you to pass additional arguments to the underlying call to `autoload`.
+   See the Emacs documentation for `autoload`.
+
 
 #### conditional loading
 
