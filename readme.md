@@ -16,25 +16,23 @@ Put namespaces.el in your loadpath, then require it in your init.el:
 ### Optional Steps:
 
 1. Configure your package repositories, eg:
-```lisp
-;; Initialize packages.
-(loop for x in '(
-                 ("melpa"     . "http://melpa.milkbox.net/packages/")
-                 ("marmalade" . "http://marmalade-repo.org/packages/")
-                 ; ... etc
-                 )
-      do (add-to-list 'package-archives x)
 
-      ;; Ensure the package archives have been initialized.
-      finally (package-initialize)
-      finally (unless package-archive-contents
-                (package-refresh-contents)))
-```
+   ```lisp
+   ;; Initialize packages.
+   (add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/"))
+   (add-to-list 'package-archives '("melpa"     . "http://melpa.milkbox.net/packages/"))
+
+   ;; Ensure the package archives have been initialized.
+   (package-initialize)
+   (unless package-archive-contents
+     (package-refresh-contents))
+   ```
 
 2. If needed, set `*ns-base-path*` to the directory containing your elisp files. The default is `~/.emacs.d/elisp/`:
-```lisp
-(setq *ns-base-path* "~/.emacs.d/lisp/")
-```
+
+   ```lisp
+   (setq *ns-base-path* "~/.emacs.d/lisp/")
+   ```
 
 ## Basic Usage:
 
