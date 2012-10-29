@@ -15,6 +15,8 @@ Put namespaces.el in your loadpath, then require it in your init.el:
 
 ### Optional Configuration
 
+`namespace` makes it easy to load dependencies using the package management features in Emacs 24+.
+
 1. Configure your package repositories, eg:
 
    ```lisp
@@ -36,7 +38,7 @@ Put namespaces.el in your loadpath, then require it in your init.el:
 
 ## Basic Usage
 
-### Defining namespaces and members
+### Defining Namespaces and Members
 
 You can define a namespace or reopen an existing one using the `namespace` macro:
 ```lisp
@@ -62,7 +64,7 @@ Namespaced variables are defined using `def`. You can retrieve their values usin
 
 Symbols defined with `defn` and `def` are private unless you explicitly export them.
 
-### Exporting and importing namespace members
+### Exporting and Importing Namespaced Symbols
 
 To make a namespaced symbol publicly-accessible, add it to the exports list for that namespace:
 ```lisp
@@ -82,7 +84,7 @@ Other namespaces can now access that exported symbol by using direct qualificati
 The `namespace` macro is a versatile beast. It is used to import and export namespace symbols, load emacs
 features and download elisp packages.
 
-### Keyword arguments.
+### Keyword Arguments
 
 `namespace` takes a number of keyword arguments, which expect vectors as their values.
 
@@ -138,7 +140,7 @@ Download the specified elisp packages, then require or autoload them.
 
 ### Dependency Forms and Autoloading
 
-In addition to *requiring* elisp features, the `:packages` and `:use` arguments allow you to autoload symbols:
+In addition to loading elisp features, the `:packages` and `:use` arguments allow you to autoload symbols:
 ```lisp
  (namespace clojure-conf
    :packages
@@ -148,12 +150,13 @@ In addition to *requiring* elisp features, the `:packages` and `:use` arguments 
  ```
  In this example:
    1. paredit is *required*, meaning it is eagerly loaded
-   2. `nrepl-mode` is autoloaded from the nrepl package, meaning it will be lazily loaded
+   2. `nrepl-mode` is *autoloaded* from the nrepl package, meaning it will be lazily loaded
    3. `clojure-mode` is also autoloaded, with a nested form allowing you to pass additional arguments to the underlying call to `autoload`.
-   See the Emacs documentation for `autoload`.
+
+See the Emacs documentation for `autoload` for more info.
 
 
-#### conditional loading
+### Conditional Loading
 
 The above forms take optional :when or :unless keyword arguments to specify loading conditions.
 This can be useful if you juggle OSes, terminals and window-systems.
