@@ -8,7 +8,7 @@ Requires Emacs 24 or later.
 ### Why Does Emacs Need Namespaces?
 
 Elisp doesn't have namespaces, so package authors tend to use prefixes to separate their identifiers and avoid clobbering.
-For instance, if you have yasnippet installed you can run `M-x describe-function yas<TAB>` see every function defined by that feature.
+For instance, if you have yasnippet installed you can run `M-x describe-function yas<TAB>` to see every function defined by that feature.
 This level of exposure makes it hard to distinguish the intended interface from volatile internal details.
 
 At a deeper level, a single global namespace makes elisp programming more annoying than it needs to be. I *agonize* over what to name my utility functions, because
@@ -81,7 +81,7 @@ To make a namespaced symbol publicly-accessible, add it to the exports list for 
 ```lisp
 (namespace enterprise :export [ captain ])
 ```
-Other namespaces can now access that exported symbol by using direct qualification, or by adding it to their namespace imports.
+Other namespaces can now access that symbol using direct qualification, or by adding it to their namespace imports.
 ```lisp
 (namespace j25)
 (@ enterprise/captain)                   ; => "Picard"
