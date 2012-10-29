@@ -31,7 +31,7 @@ Put namespaces.el in your loadpath, then require it in your init.el:
                 (package-refresh-contents)))
 ```
 
-2. If needed, Set *ns-base-path* to the directory containing your elisp files. The default is `~/.emacs.d/elisp/`:
+2. If needed, set `*ns-base-path*` to the directory containing your elisp files. The default is `~/.emacs.d/elisp/`:
 ```lisp
 (setq *ns-base-path* "~/.emacs.d/lisp/")
 ```
@@ -81,7 +81,7 @@ Other namespaces can now access that exported symbol by using direct qualificati
 
 ### De Res Macronis Nomenspationem
 
-The `namespace` macro is a versatile beat. It is used to import and export namespace symbols, load emacs
+The `namespace` macro is a versatile beast. It is used to import and export namespace symbols, load emacs
 features and download elisp packages. It takes a number of keyword arguments, which expect vectors as their values.
 
 #### export
@@ -115,7 +115,7 @@ The example above will import only `x` and `y` from namespace `foo`.
 
 Load another elisp file from disk or require an emacs feature. Periods (`.`)
 are interpereted as path delimiters.
-The *ns-base-path* variable is used to set the base of the namespace search path.
+The `*ns-base-path*` variable is used to set the base of the namespace search path.
 
 This example will attempt to load BASE/bar/baz.el, as well as a few emacs features.
 ```lisp
@@ -137,7 +137,7 @@ Download the specified elisp packages, then require or autoload them.
 #### conditional loading
 
 The above forms take optional :when or :unless keyword arguments to specify loading conditions.
-This can be useful if you juggle between OSes, terminals and window-systems.
+This can be useful if you juggle OSes, terminals and window-systems.
 ```lisp
 (namespace foo
   :use [ (color-theme :when window-system) ])
