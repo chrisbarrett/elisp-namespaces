@@ -159,8 +159,11 @@ foo/bar -> (foo bar)"
 (defmacro @ (symbol)
   "Evaluate a literal as a qualified symbol in the current namespace."
   (assert (symbolp symbol))
-  `(@using ,*ns*
-     (eval (@sym ,symbol))))
+  (let ((sym (eval `(@sym ,symbol))))
+    (assert (not (null sym)) nil
+            "No variable named `%s` is accessible from namespace `%s`." symbol *ns*)
+    `(@using ,*ns*
+         (eval (@sym ,symbol)))))
 
 
 (defun @dynamic (symbol)
