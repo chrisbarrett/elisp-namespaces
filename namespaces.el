@@ -10,7 +10,7 @@
 ;;;    list of conditions and the following disclaimer.
 ;;; 2. Redistributions in binary form must reproduce the above copyright notice,
 ;;;    this list of conditions and the following disclaimer in the documentation
-;;;    aor other materials provided with the distribution.
+;;;    and/or other materials provided with the distribution.
 ;;;
 ;;; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ;;; ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -36,112 +36,6 @@
 ;;; INSTALLATION:
 ;;; Put this file in your load path and (require 'namespaces).
 ;;;
-;;;
-;;; DECLARATION:
-;;; ============================================================================
-;;; Namespaces are declared using the `namespace` macro:
-;;;
-;;;  (namespace foo)
-;;;
-;;;
-;;; DEFN and @CALL:
-;;; ============================================================================
-;;; `defn` defines a function in the current namespace. It is equivalent to `defun*`.
-;;;
-;;;  (defn greet (name) (concat "Hello " name "!"))
-;;;
-;;; To apply a function declared with `defn`, use the @call macro.
-;;;
-;;;  (@call greet "Spock")    ; => "Hello, Spock!"
-;;;
-;;; The function you are calling must be accessible from the current namespace.
-;;;
-;;;
-;;; DEF, @ and @SET:
-;;; ============================================================================
-;;; `def` defines a variable in the current namespace. It is equivalent to `defvar`.
-;;;
-;;;  (def captain "Kirk")
-;;;
-;;; To retrieve the value of a variable declared with `def`, use the `@` macro:
-;;;
-;;;  (@ captain)               ; => "Kirk"
-;;;
-;;; To rebind a value, use `@set`:
-;;;
-;;;  (@set captain "Picard")
-;;;
-;;;
-;;; NAMESPACE MACRO:
-;;; ============================================================================
-;;; The `namespace` macro is used to import & export namespace symbols, load emacs
-;;; features and download elisp packages. It has a number of keyword arguments,
-;;; which expect vectors as their values.
-;;;
-;;; :export
-;;; --------------------------------------------------------------------------
-;;; Make the given functions or variables externally-accessible ('public').
-;;;
-;;;  (namespace foo :export [ foo-fn foo-var ])
-;;;
-;;;
-;;; :import
-;;; --------------------------------------------------------------------------
-;;; Import public symbols from another namespace:
-;;;
-;;;  (namespace foo :export [x])
-;;;  (def x "Hello")
-;;;
-;;;  (namespace bar :import [foo])
-;;;  (@ x)                            ; => "Hello"
-;;;
-;;; The default behaviour is to import all public symbols. You can load a subset
-;;; by providing a list of symbols instead:
-;;;
-;;;  (namespace baz :import [ (foo x y) ])  ; Import only `x` and `y` from namespace `foo`.
-;;;
-;;;
-;;; :use
-;;; ----------------------------------------------------------------------------
-;;; Load another elisp file from disk or require an emacs feature. Periods (`.`)
-;;; are interpereted as path delimiters.
-;;;
-;;; The *ns-base-path* variable is used to set the base of the namespace search path.
-;;; For example, the following form will attempt to load BASE/bar/baz.el:
-;;;
-;;;  (namespace foo :use [ bar.baz paredit color-theme ])
-;;;
-;;;
-;;; :packages
-;;; --------------------------------------------------------------------------
-;;; Download the specified elisp packages, then require or autoload them.
-;;;
-;;;  (namespace foo :packages [ auto-complete ])
-;;;
-;;;
-;;; EMACS INTEROP
-;;; ============================================================================
-;;; The `defn` and `def` macros obfuscate their true symbols to prevent callers
-;;; from casually accessing private members of a namespace. You can obtain a
-;;; symbol's underlying name using the `@sym` macro. This is allows you to
-;;; interoperate with foreign elisp. For example:
-;;;
-;;;  (defn private () (message "TOP SECRET"))
-;;;
-;;;  (defvar example-hook)
-;;;  (add-hook 'example-hook (@sym private))
-;;;  (run-hooks 'example-hook)                 ; check your *Messages* buffer!
-;;;
-;;; You can also use the `@lambda` macro when you want to capture the declaring
-;;; namespace in your hooks or exported functions:
-;;;
-;;;  (namespace foo :export [ x ])
-;;;  (def x (@lambda () *ns*))            ; *ns* represents the current namespace.
-;;;
-;;;  (namespace bar :import [ foo ])
-;;;  (funcall (@ x))                 ; => foo
-;;;
-
 
 (setq lexical-binding t)
 (eval-when-compile (require 'cl))
