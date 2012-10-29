@@ -41,15 +41,16 @@
 (eval-when-compile (require 'cl))
 (require 'package)
 
-(defun join-dirs (&rest directories)
+(defun __ns/join-dirs (&rest directories)
   (reduce (lambda (l r) (file-name-as-directory (concat l r)))
           directories))
 
 (defvar *ns* '__ns
   "Defines the current namespace. Use the `namespace` macro to open a namespace.")
 
-(defvar *ns-base-path* (join-dirs user-emacs-directory "src")
+(defvar *ns-base-path* (__ns/join-dirs user-emacs-directory "elisp")
   "Defines the base directory for namespace resolution.")
+
 
 ;;; -------------------------- Symbol Mapping ----------------------------------
 
@@ -281,7 +282,7 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
 (defn ns->file (base ns)
   "Return a relative filepath for a given namespace."
   (let* ((xs   (split-string (symbol-name ns) "[.]"))
-         (path (apply 'join-dirs base xs))
+         (path (apply '__ns/join-dirs base xs))
          (path (substring path 0 -1)))
     (when xs
       (concat path ".el"))))
