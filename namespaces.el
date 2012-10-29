@@ -148,7 +148,7 @@ foo/bar -> (foo bar)"
     `',hash))
 
 
-(defmacro __ns/in-ns (ns &rest body)
+(defmacro @using (ns &rest body)
   "Dynamically rebind the current namespace to NS while evaluating BODY."
   (declare (indent 1))
   (assert (symbolp ns))
@@ -159,7 +159,7 @@ foo/bar -> (foo bar)"
 (defmacro @ (symbol)
   "Evaluate a literal as a qualified symbol in the current namespace."
   (assert (symbolp symbol))
-  `(__ns/in-ns ,*ns*
+  `(@using ,*ns*
      (eval (@sym ,symbol))))
 
 
@@ -183,7 +183,7 @@ foo/bar -> (foo bar)"
 (defmacro @lambda (args &rest body)
   "A lambda function that captures the surrounding namespace environment."
   (declare (indent defun))
-  `(lambda ,args (__ns/in-ns ,*ns* ,@body)))
+  `(lambda ,args (@using ,*ns* ,@body)))
 
 
 ;;; -------------------------- Binding macros ----------------------------------
@@ -219,7 +219,7 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
       `(,defun-form ,name ,arglist
          ,docstring
          ,interactive
-         (__ns/in-ns ,*ns*
+         (@using ,*ns*
            ,@body)))))
 
 
@@ -227,7 +227,7 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
 
 (defmacro* namespace (name &key import export use packages)
   (declare (indent 1))
-  (__ns/in-ns __ns
+  (@using __ns
           ;; Export the given symbols.
           (mapc (lambda (x) (__ns/export name x))
                 export)
@@ -331,7 +331,7 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
 (def match-kw
      (rx "(" (group
               (or (and "def" (* (any graphic)))
-                  "namespace" "__ns/in-ns" "@lambda"))))
+                  "namespace" "@using" "@lambda"))))
 
 (defn match-identifier-after (&rest strings)
   (rx-to-string `(and (or ,@strings) (+ space)
@@ -340,7 +340,7 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
 (def match-op    (rx "(" (group (or "@" "@dynamic" "@call" "@sym" "@set")) space))
 (def match-fname (@call match-identifier-after "defn"))
 (def match-var   (@call match-identifier-after "def"))
-(def match-ns    (@call match-identifier-after "namespace"))
+(def match-ns    (@call match-identifier-after "namespace" "@using"))
 
 (add-hook 'emacs-lisp-mode-hook
           (@lambda ()
