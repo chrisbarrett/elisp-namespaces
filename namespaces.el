@@ -249,18 +249,30 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
   `',name)
 
 
+(defn delete-nth (nth xs &key (count 1))
+  (delete-if (lambda (_) t) xs :start nth :count count))
+
+(defn delete-keyword-and-arg (key xs)
+  (let ((pos (position key xs)))
+    (if pos
+        (@call delete-nth pos xs :count 2)
+      xs)))
+
 (defn destructure-dep (handler)
   "Calls HANDLER to load the dependency form, provided the :when and :unless keywords do not override this.."
   (declare (indent 1))
   `(lambda (dep)
-     (let ((xs (if (sequencep dep) dep (list dep))))
-       (destructuring-bind
-           (sym &rest autos
-                &key (when t) (unless nil)
-		&allow-other-keys)
-           xs
-         (when (and (eval when) (not (eval unless)))
-           (funcall ,handler sym autos))))))
+     (destructuring-bind
+	 (sym &rest autos &key (when t) (unless nil) &allow-other-keys)
+	 (if (sequencep dep) dep (list dep))
+       (let* (
+	      (w     (if (symbolp when) when (eval when)))
+	      (u     (if (symbolp unless) unless (eval unless)))
+	      (autos (@call delete-keyword-and-arg :when autos))
+	      (autos (@call delete-keyword-and-arg :unless autos))
+	     )
+	 (when (and w (not u))
+	   (funcall ,handler sym autos))))))
 
 
 (defn handle-import (from-ns into-ns deps)
@@ -276,8 +288,9 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
                   (symbol-file feature) (symbol-name feature))))
     (if (symbolp dep)
         (autoload dep feat)
-      (destructuring-bind
-          (symbol &key docstring interactive type &allow-other-keys) dep
+      (destructuring-bind (symbol &key docstring interactive type
+                                  &allow-other-keys)
+          dep
         (autoload symbol feat docstring interactive type)))))
 
 
@@ -383,3 +396,7 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
 
 (namespace user)
 (provide 'namespaces)
+
+;; Local Variables:
+;; no-byte-compile: t
+;; End:
