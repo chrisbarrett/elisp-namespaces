@@ -41,14 +41,10 @@
 (require 'cl)
 (require 'package)
 
-(defun __ns/join-dirs (&rest directories)
-  (reduce (lambda (l r) (file-name-as-directory (concat l r)))
-          directories))
-
 (defvar *ns* '__ns
   "Defines the current namespace. Use the `namespace` macro to open a namespace.")
 
-(defvar *ns-base-path* (__ns/join-dirs user-emacs-directory "elisp")
+(defvar *ns-base-path* (concat user-emacs-directory "elisp/")
   "Defines the base directory for namespace resolution.")
 
 
@@ -85,7 +81,7 @@
 
 
 (defun* __ns/insert-into (table ns (key value))
-  "Insert a symbol into the specified table."
+  "Insert a symbol into the specified namespace table, creating that table if it does not already exist.."
   (let ((tbl  (gethash ns table)))
     (unless tbl
       (setq tbl (make-hash-table))
@@ -263,16 +259,16 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
   (declare (indent 1))
   `(lambda (dep)
      (destructuring-bind
-	 (sym &rest autos &key (when t) (unless nil) &allow-other-keys)
-	 (if (sequencep dep) dep (list dep))
+         (sym &rest autos &key (when t) (unless nil) &allow-other-keys)
+         (if (sequencep dep) dep (list dep))
        (let* (
-	      (w     (if (symbolp when) when (eval when)))
-	      (u     (if (symbolp unless) unless (eval unless)))
-	      (autos (@call delete-keyword-and-arg :when autos))
-	      (autos (@call delete-keyword-and-arg :unless autos))
-	     )
-	 (when (and w (not u))
-	   (funcall ,handler sym autos))))))
+              (w     (if (symbolp when) when (eval when)))
+              (u     (if (symbolp unless) unless (eval unless)))
+              (autos (@call delete-keyword-and-arg :when autos))
+              (autos (@call delete-keyword-and-arg :unless autos))
+             )
+         (when (and w (not u))
+           (funcall ,handler sym autos))))))
 
 
 (defn handle-import (from-ns into-ns deps)
@@ -294,10 +290,14 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
         (autoload symbol feat docstring interactive type)))))
 
 
+(defn join-dirs (&rest directories)
+  (reduce (lambda (l r) (file-name-as-directory (concat l r)))
+          directories))
+
 (defn ns->file (base ns)
   "Return a relative filepath for a given namespace."
   (let* ((xs   (split-string (symbol-name ns) "[.]"))
-         (path (apply '__ns/join-dirs base xs))
+         (path (apply (@sym join-dirs) base xs))
          (path (substring path 0 -1)))
     (when xs
       (concat path ".el"))))
@@ -355,7 +355,7 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
 
 ;;; -------------------------- Public utilities -------------------------------
 
-(namespace namespace
+(namespace ns-utils
   :export
   [ exported-symbols
     symbol-tables
@@ -396,6 +396,7 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
 
 (namespace user)
 (provide 'namespaces)
+
 
 ;; Local Variables:
 ;; no-byte-compile: t
