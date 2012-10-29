@@ -174,7 +174,10 @@ foo/bar -> (foo bar)"
 (defmacro @call (fn &rest args)
   "Apply the given namespace-qualified function."
   (assert (symbolp fn))
-  `(funcall `,(@sym ,fn) ,@args))
+  (let ((sym (eval `(@sym ,fn))))
+    (assert (functionp sym) nil
+            "No function named `%s` is accessible from namespace `%s`." fn *ns*)
+    `(funcall `,(@sym ,fn) ,@args)))
 
 
 (defmacro* @set (symbol value)
