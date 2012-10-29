@@ -38,7 +38,7 @@
 ;;;
 
 (setq lexical-binding t)
-(eval-when-compile (require 'cl))
+(require 'cl)
 (require 'package)
 
 (defun __ns/join-dirs (&rest directories)
@@ -250,14 +250,16 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
 
 
 (defn destructure-dep (handler)
+  "Calls HANDLER to load the dependency form, provided the :when and :unless keywords do not override this.."
   (declare (indent 1))
   `(lambda (dep)
-     (let* ((xs    (if (sequencep dep) dep (list dep)))
-            (load? (destructuring-bind
-                       (&key (when t) (unless nil) &allow-other-keys) xs
-                     (and (eval when) (not (eval unless))))))
-       (destructuring-bind (sym &rest autos) xs
-         (when load?
+     (let ((xs (if (sequencep dep) dep (list dep))))
+       (destructuring-bind
+           (sym &rest autos
+                &key (when t) (unless nil)
+		&allow-other-keys)
+           xs
+         (when (and (eval when) (not (eval unless)))
            (funcall ,handler sym autos))))))
 
 
