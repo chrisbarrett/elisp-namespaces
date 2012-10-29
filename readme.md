@@ -1,5 +1,7 @@
 # Elisp Namespaces
 
+![Namespaces in Elisp Screenshot]("http://cloud.github.coownloads/chrisbarrett/elisp-namespaces/screenshot.png")
+
 A straight-forward implementation of namespaces for Emacs LISP.
 Helps you keep the global namespace clean and protect your functions from prying REPLs.
 
