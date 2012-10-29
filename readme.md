@@ -36,7 +36,7 @@ Put namespaces.el in your loadpath, then require it in your init.el:
 
 ## Basic Usage
 
-### Define namespaces and members
+### Defining namespaces and members
 
 You can define a namespace or reopen an existing one using the `namespace` macro:
 ```lisp
