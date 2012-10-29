@@ -1,10 +1,21 @@
 # Elisp Namespaces
 
 A straight-forward implementation of namespaces for Emacs LISP.
-
 Helps you keep the global namespace clean and protect your functions from prying REPLs.
 
 Requires Emacs 24 or later.
+
+### Why Does Emacs Need Namespaces?
+
+Elisp doesn't have namespaces, so package authors tend to use prefixes to separate their identifiers and avoid clobbering.
+For instance, if you have yasnippet installed you can run `M-x describe-function yas<TAB>` see every function defined by that feature.
+This level of exposure makes it hard to distinguish the intended interface from volatile internal details.
+
+At a deeper level, a single global namespace makes elisp programming more annoying than it needs to be. I *agonize* over what to name my utility functions, because
+all the good names are taken. And prefixing everything by hand is so *manual*.
+
+This `namespace` package provides that basic level of encapsulation using a couple of simple macros, as well as conveniences to simplify your emacs configuration.
+Elisp doesn't have reader macros, so there's not as much sugar as I'd like. You'll learn to love the `@` symbol!
 
 ## Installation
 
