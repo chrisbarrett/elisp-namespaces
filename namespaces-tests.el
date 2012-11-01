@@ -186,7 +186,7 @@
   (should (equal 'expected (@call foo/public))))
 
 
-;;; namespace keys
+;;; Namespace Requires
 
 (check "can require elisp features"
   (let ((feature (gensym)))
@@ -195,9 +195,16 @@
     (should (member feature features))))
 
 
+(check "can load elisp files using namespace qualifier"
+  (let    ((file))
+    (flet ((file-exists-p (_) t)
+           (load (f) (setq file f)))
+      (eval `(namespace foo :use [ x.y.z ]))
+      (should (string-match-p (concat *ns-base-path* "x/y/z.el$") file)))))
+
+
 (check "can download packages"
-  (let    ((pkg (gensym))
-           (loaded))
+  (let    ((pkg (gensym)) (loaded))
     (flet ((package-install (x) (setq loaded x)))
       (provide pkg)
       (eval `(namespace foo :packages [ ,pkg ]))
@@ -211,6 +218,41 @@
       (eval `(namespace foo :packages [ ,pkg ]))
       (should (member pkg features)))))
 
+
+;;; Conditional Loading
+
+(check "loads a dependency when `when` evaluates to true"
+  (let ((feature (gensym)))
+    (provide feature)
+    (eval `(namespace foo :use [ (,feature :when (eq t t)) ]))
+    (should (member feature features))))
+
+
+(check "loads a dependency when `unless` evaluates to nil"
+  (let ((feature (gensym)))
+    (provide feature)
+    (eval `(namespace foo :use [ (,feature :unless (eq t nil)) ]))
+    (should (member feature features))))
+
+
+(check "loads a dependency when `when` is t and `unless` is nil"
+  (let ((feature (gensym)))
+    (provide feature)
+    (eval `(namespace foo :use [ (,feature :when t :unless nil) ]))
+    (should (member feature features))))
+
+
+(check "does not load a dependency when `when` evaluates to nil"
+  (namespace foo :use [ (undefined :when (eq t nil)) ]))
+
+(check "does not load a dependency when `unless` evaluates to true"
+  (namespace foo :use [ (undefined :unless (eq t t)) ]))
+
+(check "does not load a dependency when `when` is true and `unless` is nil"
+  (namespace foo :use [ (undefined :when nil :unless nil) ]))
+
+(check "does not load a dependency when `when` is t and `unless` is t"
+  (namespace foo :use [ (undefined :when t :unless t) ]))
 
 
 ;; Local Variables:
