@@ -44,7 +44,7 @@
   (should-not (@sym undefined)))
 
 
-;;; def, @
+;;; def, @, @set
 
 (check "can define and read namespaced var"
   (def var 'expected)
@@ -186,7 +186,7 @@
   (should (equal 'expected (@call foo/public))))
 
 
-;;; Namespace Requires
+;;; Dependency loading
 
 (check "can require elisp features"
   (let ((feature (gensym)))
@@ -195,8 +195,8 @@
     (should (member feature features))))
 
 
-(check "can load elisp files using namespace qualifier"
-  (let    ((file))
+(check "can load elisp files using period-delimited symbol"
+  (let    ((file "default"))
     (flet ((file-exists-p (_) t)
            (load (f) (setq file f)))
       (eval `(namespace foo :use [ x.y.z ]))
@@ -217,6 +217,34 @@
       (provide pkg)
       (eval `(namespace foo :packages [ ,pkg ]))
       (should (member pkg features)))))
+
+
+;;; Autoloading
+
+(check "can autoload elisp features"
+  (let    ((feature (gensym))
+           (result))
+    (flet (
+           (autoload (fn file &optional doc interactive type)
+             (setq result `[,fn ,file ,interactive ,type]))
+           )
+      (provide feature)
+      (eval `(namespace foo :use [ (,feature (x :interactive t :type boolean)) ]))
+      (should (equal result `[x ,(symbol-name feature) t boolean])))))
+
+
+(check "can autoload packages"
+  (let    ((pkg (gensym))
+           (result))
+    (flet (
+           (package-install (x))
+
+           (autoload (fn file &optional doc interactive type)
+             (setq result `[,fn ,file ,interactive ,type]))
+           )
+      (provide pkg)
+      (eval `(namespace foo :packages [ (,pkg (x :interactive t :type boolean))]))
+      (should (equal result `[x ,(symbol-name pkg) t boolean])))))
 
 
 ;;; Conditional Loading
