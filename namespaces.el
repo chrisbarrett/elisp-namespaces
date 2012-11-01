@@ -386,7 +386,7 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
   (@call hash-keys __ns/symbols->hashes-table))
 
 
-(defn exported-symbols (ns)
+(defn exported-symbols (&optional (ns *ns*))
   "Returns the symbols exported by the given namespace, or the current namespace if none is supplied."
   (let ((tbl (gethash ns __ns/exports-table)))
     (when tbl (@call hash-keys tbl))))
