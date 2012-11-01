@@ -161,7 +161,7 @@
   (namespace foo :export [ public ])
   (def public 'expected)
   (namespace bar)
-  (should (equal 'expected (eval `(@ foo/public)))))
+  (should (equal 'expected (@ foo/public))))
 
 
 (check "can set public var using qualified symbol"
