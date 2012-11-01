@@ -287,7 +287,7 @@
 (check "does not load a dependency when `unless` evaluates to true"
   (namespace foo :use [ (undefined :unless (eq t t)) ]))
 
-(check "does not load a dependency when `when` is true and `unless` is nil"
+(check "does not load a dependency when `when` is nil and `unless` is nil"
   (namespace foo :use [ (undefined :when nil :unless nil) ]))
 
 (check "does not load a dependency when `when` is t and `unless` is t"
