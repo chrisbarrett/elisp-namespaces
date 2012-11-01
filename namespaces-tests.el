@@ -33,6 +33,14 @@
   (should (equal 'test *ns*)))
 
 
+;;; @lambda
+
+(check "@lambda captures enclosing namespace"
+  (let ((result)
+        (fn (@lambda () (setq result *ns*))))
+    (@using foo (funcall fn))
+    (should (eq 'test result))))
+
 ;;; @sym
 
 (check "@sym should return the underlying symbol for a namespaced symbol"
