@@ -392,6 +392,12 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
     (when tbl (@call hash-keys tbl))))
 
 
+(defn namespace-members (&optional (ns *ns*))
+  "Returns the symbols defined or imported into the given namespace, or the current namespace if none is supplied."
+  (let ((tbl (gethash ns __ns/symbols->hashes-table)))
+    (when tbl (@call hash-keys tbl))))
+
+
 (defn symbol-tables ()
   "Returns a list of all namespaces and their symbols."
   (@call map-hash2 (lambda (k v) `(,k ,(@call hash-keys v)))
