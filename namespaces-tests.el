@@ -6,13 +6,13 @@
 (defmacro check (desc &rest body)
   "Wrap ert-deftest with a simpler interface for testing namespaces."
   (declare (indent 1))
-  (let ((ns (gensym)))
-    `(ert-deftest
-         ,(intern (replace-regexp-in-string "[ .]" "-" desc)) ()
-       ;; Use unique namespaces for each test.
-       ;; Provide anaphoric `ns`
-       (let ((ns ',ns))
-         (@using ,ns ,@body)))))
+  `(ert-deftest
+       ,(intern (replace-regexp-in-string "[ .]" "-" desc)) ()
+     ;; Rebind namespace-private tables for tests.
+     (let ((__ns/hashes->symbols-table (copy-hash-table __ns/hashes->symbols-table))
+           (__ns/symbols->hashes-table (copy-hash-table __ns/symbols->hashes-table))
+           (__ns/exports-table         (copy-hash-table __ns/exports-table)))
+       (@using test ,@body))))
 
 
 ;;; namespace
@@ -30,7 +30,7 @@
 
 (check "@using should reset *ns* on exit"
   (@using foo nil)
-  (should (equal ns *ns*)))
+  (should (equal 'test *ns*)))
 
 
 ;;; @sym
@@ -86,7 +86,6 @@
 
 (check "should get error when accessing another namespace's private var using unqualified symbol"
   (def private)
-  ;; Switch namespace.
   (namespace foo)
   (should-error (eval `(@ private))))
 
@@ -94,14 +93,12 @@
 (check "should get error when accessing another namespace's private var using qualified symbol"
   (namespace foo)
   (def private)
-  ;; Switch namespace.
   (namespace bar)
   (should-error (eval `(@ foo/private))))
 
 
 (check "should get error when accessing another namespace's private fn using unqualified symbol"
   (defn private ())
-  ;; Switch namespace.
   (namespace foo)
   (should-error (eval `(@call private))))
 
@@ -109,7 +106,6 @@
 (check "should get error when accessing another namespace's private fn using qualified symbol"
   (namespace foo)
   (defn private ())
-  ;; Switch namespace.
   (namespace bar)
   (should-error (eval `(@call foo/private))))
 
@@ -117,7 +113,6 @@
 (check "should get error when accessing unimported public var using unqualified symbol"
   (namespace foo :export [ public ])
   (def public)
-  ;; Switch namespace.
   (namespace bar)
   (should-error (eval `(@ public))))
 
@@ -125,15 +120,13 @@
 (check "should get error when setting unimported public var using unqualified symbol"
   (namespace foo :export [ public ])
   (def public)
-  ;; Switch namespace.
   (namespace bar)
-  (should-error (eval `(@set public '_))))
+  (should-error (eval `(@set public nil))))
 
 
 (check "should get error when calling unimported public fn using unqualified symbol"
   (namespace foo :export [ public ])
-  (defn public)
-  ;; Switch namespace.
+  (defn public ())
   (namespace bar)
   (should-error (eval `(@call public))))
 
@@ -143,15 +136,13 @@
 (check "should be able to access imported public var using unqualified symbol"
   (namespace foo :export [ public ])
   (def public 'expected)
-  ;; Switch namespace.
-  (namespace bar :import [ foo ])
+  (namespace bar :import [ foo ] )
   (should (equal 'expected (@ public))))
 
 
 (check "should be able to set imported public var using unqualified symbol"
   (namespace foo :export [ public ])
   (def public nil)
-  ;; Switch namespace.
   (namespace bar :import [ foo ])
   (@set public 'expected)
   (should (equal 'expected (@ public))))
@@ -160,34 +151,30 @@
 (check "should be able to access public var using qualified symbol"
   (namespace foo :export [ public ])
   (def public 'expected)
-  ;; Switch namespace.
   (namespace bar)
-  (should (equal 'expected (@ foo/public))))
+  (should (equal 'expected (eval `(@ foo/public)))))
 
 
 (check "should be able to set public var using qualified symbol"
   (namespace foo :export [ public ])
   (def public nil)
-  ;; Switch namespace.
   (namespace bar)
   (@set foo/public 'expected)
   (should (equal 'expected (@ foo/public))))
 
 
 (check "should be able to call imported public fn using unqualified symbol"
-  (namespace foo :export [ public-fn ])
-  (defn public-fn () 'expected)
-  ;; Switch namespace.
+  (namespace foo :export [ public ])
+  (defn public () 'expected)
   (namespace bar :import [ foo ])
-  (should (equal 'expected (@call public-fn))))
+  (should (equal 'expected (@call public))))
 
 
 (check "should be able to call public fn using qualified symbol"
-  (namespace foo :export [ public-fn ])
-  (defn public-fn () 'expected)
-  ;; Switch namespace.
+  (namespace foo :export [ public ])
+  (defn public () 'expected)
   (namespace bar)
-  (should (equal 'expected (@call foo/public-fn))))
+  (should (equal 'expected (@call foo/public))))
 
 
 ;; Local Variables:
