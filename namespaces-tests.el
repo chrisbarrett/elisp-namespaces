@@ -46,12 +46,12 @@
 
 ;;; def, @
 
-(check "should be able to define and read namespaced var"
+(check "can define and read namespaced var"
   (def var 'expected)
   (should (equal 'expected (@ var))))
 
 
-(check "should be able to set namespaced var"
+(check "can set namespaced var"
   (def var)
   (@set var 'expected)
   (should (equal 'expected (@ var))))
@@ -63,7 +63,7 @@
 
 ;;; defn, @call
 
-(check "should be able to define and call namespaced fn"
+(check "can define and call namespaced fn"
   (defn x () 'expected)
   (should (equal 'expected (@call x))))
 
@@ -142,14 +142,14 @@
 
 ;;; Import/Export
 
-(check "should be able to access imported public var using unqualified symbol"
+(check "can access imported public var using unqualified symbol"
   (namespace foo :export [ public ])
   (def public 'expected)
   (namespace bar :import [ foo ] )
   (should (equal 'expected (@ public))))
 
 
-(check "should be able to set imported public var using unqualified symbol"
+(check "can set imported public var using unqualified symbol"
   (namespace foo :export [ public ])
   (def public nil)
   (namespace bar :import [ foo ])
@@ -157,14 +157,14 @@
   (should (equal 'expected (@ public))))
 
 
-(check "should be able to access public var using qualified symbol"
+(check "can access public var using qualified symbol"
   (namespace foo :export [ public ])
   (def public 'expected)
   (namespace bar)
   (should (equal 'expected (eval `(@ foo/public)))))
 
 
-(check "should be able to set public var using qualified symbol"
+(check "can set public var using qualified symbol"
   (namespace foo :export [ public ])
   (def public nil)
   (namespace bar)
@@ -172,14 +172,14 @@
   (should (equal 'expected (@ foo/public))))
 
 
-(check "should be able to call imported public fn using unqualified symbol"
+(check "can call imported public fn using unqualified symbol"
   (namespace foo :export [ public ])
   (defn public () 'expected)
   (namespace bar :import [ foo ])
   (should (equal 'expected (@call public))))
 
 
-(check "should be able to call public fn using qualified symbol"
+(check "can call public fn using qualified symbol"
   (namespace foo :export [ public ])
   (defn public () 'expected)
   (namespace bar)
