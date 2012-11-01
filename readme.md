@@ -14,9 +14,9 @@ For instance, if you have yasnippet installed you can run `M-x describe-function
 This level of exposure makes it hard to distinguish the intended interface from volatile internal details.
 
 At a deeper level, a single global namespace makes elisp programming more annoying than it needs to be. I *agonize* over what to name my utility functions, because
-all the good names are taken. And prefixing everything by hand is so *manual*.
+any name I choose could get clobbered at runtime. And prefixing everything by hand is so *manual*.
 
-This `namespace` package provides that basic level of encapsulation using a couple of simple macros, as well as conveniences to simplify your emacs configuration.
+This `namespace` package provides that basic level of encapsulation using a couple of simple macros, as well as conveniences to make setting up dependencies a snap.
 Elisp doesn't have reader macros, so there's not as much sugar as I'd like. You'll learn to love the `@` symbol!
 
 ## Installation
@@ -27,8 +27,6 @@ Put namespaces.el in your loadpath, then require it in your init.el:
 ```
 
 ### Optional Configuration
-
-`namespace` makes it easy to load dependencies using the package management features in Emacs 24+.
 
 1. Configure your package repositories, eg:
 
@@ -42,6 +40,10 @@ Put namespaces.el in your loadpath, then require it in your init.el:
    (unless package-archive-contents
      (package-refresh-contents))
    ```
+
+   The `namespace` macro makes it easy to load dependencies using the package management features in Emacs 24+;
+   make sure you set up all that package management stuff before you call those features.
+
 
 2. If needed, set `*ns-base-path*` to the directory containing your elisp files. The default is `~/.emacs.d/elisp/`:
 
