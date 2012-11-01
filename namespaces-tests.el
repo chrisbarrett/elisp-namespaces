@@ -124,6 +124,15 @@
   (should-error (eval `(@set public nil))))
 
 
+(check "should get error when setting undefined var using unqualified symbol"
+  (should-error (eval `(@set x nil))))
+
+
+(check "should get error when setting undefined member var using qualified symbol"
+  (namespace foo)
+  (should-error (eval `(@set foo/x nil))))
+
+
 (check "should get error when calling unimported public fn using unqualified symbol"
   (namespace foo :export [ public ])
   (defn public ())

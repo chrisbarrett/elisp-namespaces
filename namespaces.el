@@ -196,6 +196,8 @@ foo/bar -> (foo bar)"
 (defmacro* @set (symbol value)
   "Set the value of a namespace-qualified symbol."
   (assert (symbolp symbol))
+  (assert (__ns/accessible-p *ns* symbol) nil
+          "No variable named `%s` is accessible from namespace `%s`." symbol *ns*)
   `(set (@sym ,symbol) ,value))
 
 
