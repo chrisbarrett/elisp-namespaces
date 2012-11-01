@@ -170,11 +170,10 @@ foo/bar -> (foo bar)"
 (defmacro @ (symbol)
   "Evaluate a literal as a qualified symbol in the current namespace."
   (assert (symbolp symbol))
-  (let ((sym (eval `(@sym ,symbol))))
-    (assert (not (null sym)) nil
-            "No variable named `%s` is accessible from namespace `%s`." symbol *ns*)
-    `(@using ,*ns*
-         (eval (@sym ,symbol)))))
+  (assert (and (__ns/accessible-p *ns* symbol)
+               (eval `(@sym ,symbol)))
+          nil "No var named `%s` is accessible from namespace `%s`." symbol *ns*)
+  `(@using ,*ns* (eval (@sym ,symbol))))
 
 
 (defun @dynamic (symbol)
@@ -185,12 +184,11 @@ foo/bar -> (foo bar)"
 (defmacro @call (fn &rest args)
   "Apply the given namespace-qualified function."
   (assert (symbolp fn))
-  (assert (__ns/accessible-p *ns* fn) nil
-          "No function named `%s` is accessible from namespace `%s`." fn *ns*)
-  (let ((sym (eval `(@sym ,fn))))
-    (assert (functionp sym) nil
-            "`%s` is not a function. Use `@` to evaluate vars." fn *ns*)
-    `(funcall `,(@sym ,fn) ,@args)))
+  (assert (__ns/accessible-p *ns* fn)
+          nil "No function named `%s` is accessible from namespace `%s`." fn *ns*)
+  (assert (functionp (eval `(@sym ,fn)))
+          nil "`%s` is not a function. Use `@` to evaluate vars." fn *ns*)
+  `(funcall `,(@sym ,fn) ,@args))
 
 
 (defmacro* @set (symbol value)
