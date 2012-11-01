@@ -148,7 +148,7 @@
   (should-error (eval `(@call public))))
 
 
-;;; Import/Export
+;;; Exported Vars
 
 (check "can access imported public var using unqualified symbol"
   (namespace foo :export [ public ])
@@ -180,6 +180,8 @@
   (should (equal 'expected (@ foo/public))))
 
 
+;;; Exported Functions
+
 (check "can call imported public fn using unqualified symbol"
   (namespace foo :export [ public ])
   (defn public () 'expected)
@@ -194,7 +196,18 @@
   (should (equal 'expected (@call foo/public))))
 
 
-;;; Dependency loading
+(check "can call public fn without @call using qualified symbol"
+  (let* ((ns (gensym))
+         ;; GENSYM/public
+         (fn (intern (concat (symbol-name ns) "/" "public")))
+        )
+    (eval `(namespace ,ns :export [ public ]))
+    (defn public () 'expected)
+    (namespace bar)
+    (should (equal 'expected (funcall fn)))))
+
+
+;;; Dependency Loading
 
 (check "can require elisp features"
   (let ((feature (gensym)))
