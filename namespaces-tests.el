@@ -186,6 +186,33 @@
   (should (equal 'expected (@call foo/public))))
 
 
+;;; namespace keys
+
+(check "can require elisp features"
+  (let ((feature (gensym)))
+    (provide feature)
+    (eval `(namespace foo :use [ ,feature ]))
+    (should (member feature features))))
+
+
+(check "can download packages"
+  (let    ((pkg (gensym))
+           (loaded))
+    (flet ((package-install (x) (setq loaded x)))
+      (provide pkg)
+      (eval `(namespace foo :packages [ ,pkg ]))
+      (should (eq loaded pkg)))))
+
+
+(check "requires package after download"
+  (flet   ((package-install (x)))
+    (let  ((pkg (gensym)))
+      (provide pkg)
+      (eval `(namespace foo :packages [ ,pkg ]))
+      (should (member pkg features)))))
+
+
+
 ;; Local Variables:
 ;; no-byte-compile: t
 ;; End:
