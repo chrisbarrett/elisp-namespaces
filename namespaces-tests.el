@@ -195,12 +195,15 @@
     (should (member feature features))))
 
 
-(check "can load elisp files using period-delimited symbol"
-  (let    ((file "default"))
-    (flet ((file-exists-p (_) t)
-           (load (f) (setq file f)))
-      (eval `(namespace foo :use [ x.y.z ]))
-      (should (string-match-p (concat *ns-base-path* "x/y/z.el$") file)))))
+(check "can load elisp files using period-delimited path"
+  (let    ((result))
+    (flet (
+           (file-exists-p (x) t)
+
+           (load (f) (setq result f))
+           )
+      (namespace foo :use [ x.y.z ])
+      (should (string-match-p (concat *ns-base-path* "x/y/z.el$") result)))))
 
 
 (check "can download packages"
