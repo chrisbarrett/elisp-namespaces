@@ -222,15 +222,14 @@
 
 
 (check "can call public fn without @call using qualified symbol"
-  (let* ((ns (gensym))
-         ;; GENSYM/public
-         (fn (intern (concat (symbol-name ns) "/" "public")))
+  (let* ((ns    (gensym))
+         (fname (intern (concat (symbol-name ns) "/" "public")))
         )
     (eval `(namespace ,ns :export [ public ]))
 
     (defn public () 'expected)
     (namespace bar)
-    n(should (equal 'expected (funcall fn)))))
+    (should (equal 'expected (funcall fname)))))
 
 
 ;;; Dependency Loading
@@ -246,8 +245,7 @@
   (let    ((result))
     (flet (
            (file-exists-p (x) t)
-
-           (load (f) (setq result f))
+           (load          (f) (setq result f))
            )
       (namespace foo :use [ x.y.z ])
       (should (string-match-p (concat *ns-base-path* "x/y/z.el$") result)))))
@@ -255,7 +253,9 @@
 
 (check "can download packages"
   (let    ((pkg (gensym)) (loaded))
-    (flet ((package-install (x) (setq loaded x)))
+    (flet (
+           (package-install (x) (setq loaded x))
+           )
       (provide pkg)
       (eval `(namespace foo :packages [ ,pkg ]))
       (should (eq loaded pkg)))))
