@@ -93,3 +93,7 @@
          (filtered (remove-if-not (lambda (tpl) (equal sym (cdr tpl)))
                                   (hash-keys ns/symbols-table))))
     (car-safe (car-safe filtered))))
+
+
+;;;;;;;;;;;;;;;;;;;;;
+(provide 'ns-core)

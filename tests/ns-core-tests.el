@@ -2,6 +2,8 @@
 
 (require 'ert)
 (require 'cl)
+(require 'ns-core)
+
 
 (defmacro check (desc &rest body)
   "Wrap ert-deftest with a simpler interface for testing namespaces."
