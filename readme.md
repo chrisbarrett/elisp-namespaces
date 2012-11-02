@@ -68,16 +68,23 @@ You can define namespaced functions using `defn`, and apply them using `@call`.
 (@call greet "Spock")    ; => "Hello, Spock!"
 ```
 
-Namespaced variables are defined using `def`. You can retrieve their values using the `@` macro, and set them using `@set`.
+Namespaced vars are defined using `def`. You can retrieve their values using the `@` macro.
 ```lisp
 (def captain "Kirk")
 
 (@ captain)               ; => "Kirk"
+```
+
+Vars defined using `def` are immutable. If you need a var that can change, use `defmutable` instead.
+You can change the value of a mutable var using `@set`.
+
+```
+(@defmutable captain "Kirk")
 
 (@set captain "Picard")
 ```
 
-Symbols defined with `defn` and `def` are private unless you explicitly export them.
+Symbols defined with `defn`, `def` and `defmutable` are private unless you explicitly export them.
 
 ### Exporting and Importing Namespaced Symbols
 
