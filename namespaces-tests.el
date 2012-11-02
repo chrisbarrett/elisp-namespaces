@@ -41,11 +41,12 @@
     (@using foo (funcall fn))
     (should (eq 'test result))))
 
+
 ;;; @sym
 
 (check "@sym should return the underlying symbol for a namespaced symbol"
-  (def x)
-  (should (string-prefix-p "__ns/namespaced_sym" (symbol-name (@sym x)))))
+  (def var nil)
+  (should (string-prefix-p "__ns/namespaced_sym" (symbol-name (@sym var)))))
 
 
 (check "@sym should return nil when underlying symbol does not exist"
@@ -59,10 +60,15 @@
   (should (equal 'expected (@ var))))
 
 
-(check "can set namespaced var"
-  (def var)
+(check "can set namespaced var created with defmutable"
+  (defmutable var)
   (@set var 'expected)
   (should (equal 'expected (@ var))))
+
+
+(check "should get error when setting a var created with def"
+  (def var nil)
+  (should-error (eval `(@set var 'fail))))
 
 
 (check "should get error when getting the value of an undefined var"
@@ -93,14 +99,14 @@
 ;;; Encapsulation
 
 (check "should get error when accessing another namespace's private var using unqualified symbol"
-  (def private)
+  (def private nil)
   (namespace foo)
   (should-error (eval `(@ private))))
 
 
 (check "should get error when accessing another namespace's private var using qualified symbol"
   (namespace foo)
-  (def private)
+  (def private nil)
   (namespace bar)
   (should-error (eval `(@ foo/private))))
 
@@ -120,14 +126,14 @@
 
 (check "should get error when accessing unimported public var using unqualified symbol"
   (namespace foo :export [ public ])
-  (def public)
+  (def public nil)
   (namespace bar)
   (should-error (eval `(@ public))))
 
 
 (check "should get error when setting unimported public var using unqualified symbol"
   (namespace foo :export [ public ])
-  (def public)
+  (def public nil)
   (namespace bar)
   (should-error (eval `(@set public nil))))
 
