@@ -404,52 +404,6 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
                (,(@ match-var)   1 font-lock-variable-name-face)
                (,(@ match-ns)    1 font-lock-constant-face)))))
 
-
-;;; -------------------------- Public utilities -------------------------------
-
-(namespace ns-utils
-  :export
-  [ exported-symbols
-    symbol-tables
-    namespaces ])
-
-
-(defn hash-keys (table)
-  (loop for k being the hash-keys of table collect k))
-
-(defn hash-values (table)
-  (loop for v being the hash-values of table collect v))
-
-(defn map-hash2 (fn table)
-  "Map over the key-value pairs in TABLE, collecting the results of FN."
-  (loop for k being the hash-keys of table
-        using (hash-key v)
-        collect (eval `(funcall #',fn k v))))
-
-
-(defn namespaces ()
-  "Returns a list of the namespaces that have been defined."
-  (@call hash-keys __ns/symbols->hashes-table))
-
-
-(defn exported-symbols (&optional (ns *ns*))
-  "Returns the symbols exported by the given namespace, or the current namespace if none is supplied."
-  (let ((tbl (gethash ns __ns/exports-table)))
-    (when tbl (@call hash-keys tbl))))
-
-
-(defn namespace-members (&optional (ns *ns*))
-  "Returns the symbols defined or imported into the given namespace, or the current namespace if none is supplied."
-  (let ((tbl (gethash ns __ns/symbols->hashes-table)))
-    (when tbl (@call hash-keys tbl))))
-
-
-(defn symbol-tables ()
-  "Returns a list of all namespaces and their symbols."
-  (@call map-hash2 (lambda (k v) `(,k ,(@call hash-keys v)))
-         __ns/symbols->hashes-table))
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (namespace user)
