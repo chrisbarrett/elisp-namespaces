@@ -224,3 +224,20 @@ by `defn`, `def` and `defmutable`.
 
 The name mangling also introduces some calling indirection that makes debugging more complicated.
 If you need to do extended debugging, consider temporarily redefining your functions using `defun`.
+
+## TODO:
+
+- Generate standard elisp functions and vars for exported symbols.
+  This will let callers use exported symbols without knowing anything about the namespace machinery, eg:
+
+  ```lisp
+  (namespace foo :export [ hello ])
+
+  (defn hello () "Hello!")
+
+  ; Elsewhere, in client code...
+
+  (foo/hello)        ; #=> "Hello!"
+  ```
+
+- Make `defmutable` vars publicly immutable unless exported with a `:mutable` keyword flag.
