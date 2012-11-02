@@ -11,7 +11,8 @@
      ;; Rebind namespace-private tables for tests.
      (let ((__ns/hashes->symbols-table (copy-hash-table __ns/hashes->symbols-table))
            (__ns/symbols->hashes-table (copy-hash-table __ns/symbols->hashes-table))
-           (__ns/exports-table         (copy-hash-table __ns/exports-table)))
+           (__ns/exports-table         (copy-hash-table __ns/exports-table))
+           (__ns/mutable-syms          (copy-hash-table __ns/mutable-syms)))
        (@using test ,@body))))
 
 
@@ -165,7 +166,7 @@
 
 (check "can set imported public var using unqualified symbol"
   (namespace foo :export [ public ])
-  (def public nil)
+  (defmutable public)
   (namespace bar :import [ foo ])
   (@set public 'expected)
   (should (equal 'expected (@ public))))
@@ -180,7 +181,7 @@
 
 (check "can set public var using qualified symbol"
   (namespace foo :export [ public ])
-  (def public nil)
+  (defmutable public)
   (namespace bar)
   (@set foo/public 'expected)
   (should (equal 'expected (@ foo/public))))
@@ -208,9 +209,10 @@
          (fn (intern (concat (symbol-name ns) "/" "public")))
         )
     (eval `(namespace ,ns :export [ public ]))
+
     (defn public () 'expected)
     (namespace bar)
-    (should (equal 'expected (funcall fn)))))
+    n(should (equal 'expected (funcall fn)))))
 
 
 ;;; Dependency Loading

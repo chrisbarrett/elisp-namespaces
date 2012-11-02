@@ -59,6 +59,9 @@
 (defconst __ns/exports-table (make-hash-table)
   "Maps namespaces to their publicly accessible functions.")
 
+(defconst __ns/mutable-syms (make-hash-table)
+  "Contains symbols created with `defmutable`.")
+
 
 (defun __ns/hash (ns sym)
   "Hash a symbol for insertion into lookup tables."
@@ -124,7 +127,7 @@
             collect (__ns/import ns-from ns-into sym)))))
 
 
-;;; -------------------------- Core operators ----------------------------------
+;;; -------------------------- Symbol Processing -------------------------------
 
 (defun __ns/split-sym (sym)
   "Extract the namespace from a symbol, or apply the current namespace.
@@ -137,6 +140,16 @@ foo/bar -> (foo bar)"
         `(,s1 ,s2)
       `(,*ns* ,s1))))
 
+
+(defun __ns/qualify (ns sym)
+  "Ensure SYM is qualified with namespace NS."
+  (let* ((tpl  (__ns/split-sym sym))
+         (ns   (symbol-name ns))
+         (name (symbol-name (nth 1 tpl))))
+    (intern (concat ns "/" name))))
+
+
+;;; -------------------------- Core operators ----------------------------------
 
 (defmacro @sym (symbol)
   "Return the hashed name of SYM."
@@ -194,9 +207,20 @@ foo/bar -> (foo bar)"
 (defmacro* @set (symbol value)
   "Set the value of a namespace-qualified symbol."
   (assert (symbolp symbol))
-  (assert (__ns/accessible-p *ns* symbol) nil
-          "No variable named `%s` is accessible from namespace `%s`." symbol *ns*)
-  `(set (@sym ,symbol) ,value))
+
+  (let* ((hash (eval `(@sym ,symbol)))
+         (name (__ns/qualify *ns* symbol)))
+
+    (assert hash
+            nil "No variable named `%s` is accessible from namespace `%s`." symbol *ns*)
+
+    (assert (__ns/accessible-p *ns* symbol)
+            nil "No variable named `%s` is accessible from namespace `%s`." symbol *ns*)
+
+    (assert  (gethash hash __ns/mutable-syms)
+            nil "`%s` is immutable." name)
+
+    `(setq ,hash ,value)))
 
 
 (defmacro @lambda (args &rest body)
@@ -210,15 +234,17 @@ foo/bar -> (foo bar)"
 (defmacro def (symbol value &optional docstring)
   "Define SYMBOL as an immutable var in the current namespace. Otherwise identical to `defconst`."
   (assert (symbolp symbol))
-  (let ((name (__ns/intern *ns* *ns* symbol)))
-    `(defconst ,name ,value ,docstring)))
+  (let ((hash (__ns/intern *ns* *ns* symbol)))
+    (remhash hash __ns/mutable-syms)
+    `(defconst ,hash ,value ,docstring)))
 
 
 (defmacro defmutable (symbol &optional value docstring)
   "Define SYMBOL as a mutable var in the current namespace. Otherwise identical to `defvar`."
   (assert (symbolp symbol))
-  (let ((name (__ns/intern *ns* *ns* symbol)))
-    `(defvar ,name ,value ,docstring)))
+  (let ((hash (__ns/intern *ns* *ns* symbol)))
+    (puthash hash hash __ns/mutable-syms)
+    `(defvar ,hash ,value ,docstring)))
 
 
 (defmacro defn (name arglist &optional docstring &rest body)
