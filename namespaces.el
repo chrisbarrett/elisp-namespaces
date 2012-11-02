@@ -185,7 +185,7 @@ foo/bar -> (foo bar)"
   (assert (symbolp symbol))
   (assert (and (__ns/accessible-p *ns* symbol)
                (eval `(@sym ,symbol)))
-          nil "No var named `%s` is accessible from namespace `%s`." symbol *ns*)
+          nil "Symbol `%s` is undefined or inaccessible from namespace `%s`." symbol *ns*)
   `(@using ,*ns* (eval (@sym ,symbol))))
 
 
@@ -198,7 +198,7 @@ foo/bar -> (foo bar)"
   "Apply the given namespace-qualified function."
   (assert (symbolp fn))
   (assert (__ns/accessible-p *ns* fn)
-          nil "No function named `%s` is accessible from namespace `%s`." fn *ns*)
+          nil "Function `%s` is undefined or inaccessible from namespace `%s`." fn *ns*)
   (assert (functionp (eval `(@sym ,fn)))
           nil "`%s` is not a function. Use `@` to evaluate vars." fn *ns*)
   `(funcall `,(@sym ,fn) ,@args))
@@ -212,13 +212,13 @@ foo/bar -> (foo bar)"
          (name (__ns/qualify *ns* symbol)))
 
     (assert hash
-            nil "No variable named `%s` is accessible from namespace `%s`." symbol *ns*)
+            nil "Variable `%s` is undefined or inaccessible from namespace `%s`." symbol *ns*)
 
     (assert (__ns/accessible-p *ns* symbol)
-            nil "No variable named `%s` is accessible from namespace `%s`." symbol *ns*)
+            nil "Variable `%s` is undefined or inaccessible from namespace `%s`." symbol *ns*)
 
     (assert  (gethash hash __ns/mutable-syms)
-            nil "`%s` is immutable." name)
+            nil "Invalid use of `@set`. `%s` is immutable." name)
 
     `(setq ,hash ,value)))
 
