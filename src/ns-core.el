@@ -37,7 +37,6 @@
 (defconst ns/symbols-table (make-hash-table :test 'equal)
   "Maps tuples of (hash * sym) to symbol metadata.")
 
-(equal '(1 2) '(1 2))
 
 ;;; --------------------------- Symbol Processing ---------------------------------
 

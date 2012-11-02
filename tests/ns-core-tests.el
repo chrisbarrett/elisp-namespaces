@@ -2,6 +2,7 @@
 
 (require 'ert)
 (require 'cl)
+(add-to-list 'load-path (concat user-emacs-directory "elisp-namespaces/" "src/"))
 (require 'ns-core)
 
 
