@@ -385,12 +385,13 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
                   "namespace" "@using" "@lambda"))))
 
 (defn match-identifier-after (&rest strings)
-  (rx-to-string `(and (or ,@strings) (+ space)
+  (rx-to-string `(and "("
+                      (or ,@strings) (+ space)
                       (group (+ (not (any space "()[]")))))))
 
 (def match-op    (rx "(" (group (or "@" "@dynamic" "@call" "@sym" "@set")) space))
 (def match-fname (@call match-identifier-after "defn"))
-(def match-var   (@call match-identifier-after "def"))
+(def match-var   (@call match-identifier-after "def" "defmutable"))
 (def match-ns    (@call match-identifier-after "namespace" "@using"))
 
 (add-hook 'emacs-lisp-mode-hook
