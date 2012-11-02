@@ -78,8 +78,8 @@ Namespaced vars are defined using `def`. You can retrieve their values using the
 Vars defined using `def` are immutable. If you need a var that can change, use `defmutable` instead.
 You can change the value of a mutable var using `@set`.
 
-```
-(@defmutable captain "Kirk")
+```lisp
+(defmutable captain "Kirk")
 
 (@set captain "Picard")
 ```
