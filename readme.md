@@ -3,7 +3,9 @@
 ![Namespaces in Elisp Screenshot](http://cloud.github.com/downloads/chrisbarrett/elisp-namespaces/namespaces-screenshot.png)
 
 A straight-forward implementation of namespaces for Emacs LISP.
-Helps you keep the global namespace clean and protect your functions from prying REPLs.
+Helps you keep the global namespace clean and protect your symbols from clobbering.
+
+Pull requests welcome.
 
 Requires Emacs 24 or later.
 
@@ -189,7 +191,7 @@ This can be useful if you juggle OSes, terminals and window-systems.
 
 ## Emacs Interop
 
-The `defn` and `def` macros obfuscate their true symbols to prevent callers
+The `defn`, `def` and `defmutable` macros obfuscate their true symbols to prevent callers
 from casually accessing private members of a namespace. You can obtain a
 symbol's underlying name using the `@sym` macro. This is allows you to
 interoperate with foreign elisp. For example:
@@ -199,20 +201,26 @@ interoperate with foreign elisp. For example:
 (defvar example-hook)
 (add-hook 'example-hook (@sym private))
 
-(run-hooks 'example-hook)                 ; check your *Messages* buffer!
+(run-hooks 'example-hook)                 ; check your *Messages* buffer
 ```
 
 You can also use the `@lambda` macro when you want to capture the declaring
 namespace in your hooks or exported functions:
 ```lisp
 (namespace foo :export [ x ])
-(def x (@lambda () *ns*))                 ; *ns* represents the current namespace.
+
+;; Define a public var with a closure that captures a private var.
+(def x (@lambda () (@ private)))
+(def private 'foo-private)
 
 (namespace bar :import [ foo ])
-(funcall (@ x))                           ; => foo
+(funcall (@ x))                           ; => foo-private
 ```
 
 ## Gotchas
 
-The internal mechanisms in this package do all sorts of things that make the emacs debugger experience truly terrible.
-If you want to debug your functions, consider redefining your functions using `defun` while you're testing.
+Due to internal name-mangling, you won't be able to use eldoc or `describe-function` on symbols defined
+by `defn`, `def` and `defmutable`.
+
+The name mangling also introduces some calling indirection that makes debugging more complicated.
+If you need to do extended debugging, consider temporarily redefining your functions using `defun`.
