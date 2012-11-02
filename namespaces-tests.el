@@ -11,7 +11,8 @@
      ;; Rebind namespace-private tables for tests.
      (let ((__ns/hashes->symbols-table (copy-hash-table __ns/hashes->symbols-table))
            (__ns/symbols->hashes-table (copy-hash-table __ns/symbols->hashes-table))
-           (__ns/exports-table         (copy-hash-table __ns/exports-table)))
+           (__ns/exports-table         (copy-hash-table __ns/exports-table))
+           (__ns/mutable-syms          (copy-hash-table __ns/mutable-syms)))
        (@using test ,@body))))
 
 
@@ -41,32 +42,56 @@
     (@using foo (funcall fn))
     (should (eq 'test result))))
 
+
 ;;; @sym
 
 (check "@sym should return the underlying symbol for a namespaced symbol"
-  (def x)
-  (should (string-prefix-p "__ns/namespaced_sym" (symbol-name (@sym x)))))
+  (def var nil)
+  (should (string-prefix-p "__ns/namespaced_sym" (symbol-name (@sym var)))))
 
 
 (check "@sym should return nil when underlying symbol does not exist"
   (should-not (@sym undefined)))
 
 
-;;; def, @, @set
+;;; def
 
-(check "can define and read namespaced var"
+(check "can define and read var created with def"
   (def var 'expected)
   (should (equal 'expected (@ var))))
 
+(check "should get error when setting a var created with def"
+  (def var nil)
+  (should-error (eval `(@set var 'fail))))
 
-(check "can set namespaced var"
-  (def var)
+
+;;; defmutable
+
+(check "can define and read var created with defmutable"
+  (defmutable var 'expected)
+  (should (equal 'expected (@ var))))
+
+(check "can set namespaced var created with defmutable"
+  (defmutable var)
   (@set var 'expected)
   (should (equal 'expected (@ var))))
 
 
+;;; Variable Definition
+
 (check "should get error when getting the value of an undefined var"
   (should-error (eval `(@ fail))))
+
+(check "can redefine def vars as defmutable vars and set"
+  (def var nil)
+  (defmutable var)
+  (@set var 'expected)
+  (should (equal 'expected (@ var))))
+
+(check "should get error when redefining a defmutable as a def and using @set"
+  (defmutable var)
+  (def var nil)
+  (should-error (eval `(@set var 'x))))
 
 
 ;;; defn, @call
@@ -93,14 +118,14 @@
 ;;; Encapsulation
 
 (check "should get error when accessing another namespace's private var using unqualified symbol"
-  (def private)
+  (def private nil)
   (namespace foo)
   (should-error (eval `(@ private))))
 
 
 (check "should get error when accessing another namespace's private var using qualified symbol"
   (namespace foo)
-  (def private)
+  (def private nil)
   (namespace bar)
   (should-error (eval `(@ foo/private))))
 
@@ -120,14 +145,14 @@
 
 (check "should get error when accessing unimported public var using unqualified symbol"
   (namespace foo :export [ public ])
-  (def public)
+  (def public nil)
   (namespace bar)
   (should-error (eval `(@ public))))
 
 
 (check "should get error when setting unimported public var using unqualified symbol"
   (namespace foo :export [ public ])
-  (def public)
+  (def public nil)
   (namespace bar)
   (should-error (eval `(@set public nil))))
 
@@ -148,7 +173,7 @@
   (should-error (eval `(@call public))))
 
 
-;;; Import/Export
+;;; Exported Vars
 
 (check "can access imported public var using unqualified symbol"
   (namespace foo :export [ public ])
@@ -159,7 +184,7 @@
 
 (check "can set imported public var using unqualified symbol"
   (namespace foo :export [ public ])
-  (def public nil)
+  (defmutable public)
   (namespace bar :import [ foo ])
   (@set public 'expected)
   (should (equal 'expected (@ public))))
@@ -174,11 +199,13 @@
 
 (check "can set public var using qualified symbol"
   (namespace foo :export [ public ])
-  (def public nil)
+  (defmutable public)
   (namespace bar)
   (@set foo/public 'expected)
   (should (equal 'expected (@ foo/public))))
 
+
+;;; Exported Functions
 
 (check "can call imported public fn using unqualified symbol"
   (namespace foo :export [ public ])
@@ -194,7 +221,19 @@
   (should (equal 'expected (@call foo/public))))
 
 
-;;; Dependency loading
+(check "can call public fn without @call using qualified symbol"
+  (let* ((ns (gensym))
+         ;; GENSYM/public
+         (fn (intern (concat (symbol-name ns) "/" "public")))
+        )
+    (eval `(namespace ,ns :export [ public ]))
+
+    (defn public () 'expected)
+    (namespace bar)
+    n(should (equal 'expected (funcall fn)))))
+
+
+;;; Dependency Loading
 
 (check "can require elisp features"
   (let ((feature (gensym)))
