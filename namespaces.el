@@ -207,9 +207,15 @@ foo/bar -> (foo bar)"
 
 ;;; -------------------------- Binding macros ----------------------------------
 
+(defmacro def (symbol value &optional docstring)
+  "Define SYMBOL as an immutable var in the current namespace. Otherwise identical to `defconst`."
+  (assert (symbolp symbol))
+  (let ((name (__ns/intern *ns* *ns* symbol)))
+    `(defconst ,name ,value ,docstring)))
 
-(defmacro def (symbol &optional value docstring)
-  "Define SYMBOL as a variable in the current namespace. Otherwise identical to `defvar`."
+
+(defmacro defmutable (symbol &optional value docstring)
+  "Define SYMBOL as a mutable var in the current namespace. Otherwise identical to `defvar`."
   (assert (symbolp symbol))
   (let ((name (__ns/intern *ns* *ns* symbol)))
     `(defvar ,name ,value ,docstring)))
