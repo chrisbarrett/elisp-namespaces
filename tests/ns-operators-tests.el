@@ -3,6 +3,7 @@
 (require 'ns-core)
 (require 'cl)
 (require 'ert)
+(setq lexical-binding t)
 
 (defmacro __defmutable (sym &optional value)
   "Define a namespaced var for these tests."
@@ -50,5 +51,5 @@
 
 
 ;; Local Variables:
-;; byte-compile-warnings: (not cl-functions)
+;; no-byte-compile: t
 ;; End:

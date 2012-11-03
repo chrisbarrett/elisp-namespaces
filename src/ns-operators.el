@@ -114,3 +114,9 @@
   "A lambda function that captures the surrounding namespace environment."
   (declare (indent defun))
   `(lambda ,args (^using ,*ns* ,@body)))
+
+
+
+;; Local Variables:
+;; byte-compile-warnings: (not cl-functions)
+;; End:

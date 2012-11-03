@@ -86,3 +86,9 @@
   (ns/import 'foo 'bar 'x)
   (ns/import 'foo 'bar 'x)
   (should (= 1 (hash-table-count (gethash 'bar ns/imports-table)))))
+
+
+
+;; Local Variables:
+;; no-byte-compile: t
+;; End:
