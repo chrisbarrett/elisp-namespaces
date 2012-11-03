@@ -1,10 +1,7 @@
-;; NS-CORE-TESTS
-
+(provide 'ns-core-tests)
 (require 'ert)
 (require 'cl)
-(add-to-list 'load-path (concat user-emacs-directory "elisp-namespaces/" "src/"))
 (require 'ns-core)
-
 
 (defmacro check (desc &rest body)
   "Wrap ert-deftest with a simpler interface for testing namespaces."
