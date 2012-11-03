@@ -28,7 +28,9 @@
 ;; Core namespace functions.
 ;;
 
+(provide 'ns-core)
 (require 'cl)
+
 
 (defstruct ns-meta
   public?
@@ -71,10 +73,10 @@
 ;;; --------------------------- Table Accessors -----------------------------------
 
 (defun ns/intern (ns sym)
-  "Intern the given ns/sym into the namespace table."
-  (puthash (ns/make-key ns sym)
-           (make-ns-meta)
-           ns/symbols-table))
+  "Intern the given ns/sym into the namespace table. Returns a tuple of (sym * hash) used as the key."
+  (let ((key (ns/make-key ns sym)))
+    (puthash key (make-ns-meta) ns/symbols-table)
+    key))
 
 (defun hash-keys (table)
   (loop for k being the hash-keys of table
@@ -94,5 +96,6 @@
     (car-safe (car-safe filtered))))
 
 
-;;;;;;;;;;;;;;;;;;;;;
-(provide 'ns-core)
+;; Local Variables:
+;; byte-compile-warnings: (not cl-functions)
+;; End:
