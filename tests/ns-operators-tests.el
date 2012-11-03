@@ -19,7 +19,7 @@
   (let ((hash (car (ns/intern 'foo 'bar))))
     (should (equal hash (^sym foo/bar)))))
 
-(check "^sym uses this namespace for unqualified symbols"
+(check "^sym uses this namespace when resolving unqualified symbols"
   (let ((hash (car (ns/intern 'foo 'bar)))
         (ns/current-ns 'foo))
     (should (equal hash (^sym bar)))))
