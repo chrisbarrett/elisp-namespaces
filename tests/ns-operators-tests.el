@@ -80,6 +80,14 @@
       (^set foo/x 'expected)
       (should (equal 'expected (eval (ns/get-symbol-hash 'foo 'x)))))))
 
+;;; ^lambda
+
+(check "^lambda captures namespace environment"
+  (let ((x))
+    (^using foo
+      (setq x (^lambda () ns/current-ns)))
+    (^using bar
+      (should (equal 'foo (funcall x))))))
 
 ;; Local Variables:
 ;; no-byte-compile: t

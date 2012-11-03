@@ -141,7 +141,7 @@ Returns the hash and name of the sym if if it succeeds, else nil"
 (defmacro ^lambda (args &rest body)
   "A lambda function that captures the surrounding namespace environment."
   (declare (indent defun))
-  `(lambda ,args (^using ,*ns* ,@body)))
+  `(lambda ,args (^using ,ns/current-ns ,@body)))
 
 
 
