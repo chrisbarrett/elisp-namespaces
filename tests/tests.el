@@ -30,6 +30,7 @@
 
 (require 'ns-core-tests)
 (require 'ns-operators-tests)
+(require 'ns-definitions-tests)
 
 ;; Local Variables:
 ;; no-byte-compile: t
