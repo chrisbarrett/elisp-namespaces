@@ -5,13 +5,15 @@
 (require 'ert)
 (setq lexical-binding t)
 
-(defmacro __defmutable (sym &optional value)
+(defmacro with-var (sym value &rest body)
   "Define a namespaced var for these tests."
+  (declare (indent defun))
   (let* ((tpl  (ns/split-sym sym))
          (ns   (or (car tpl) ns/current-ns))
          (sym  (cdr tpl))
          (hash (car (ns/intern ns sym))))
-    `(defvar ,hash ,value)))
+    `(let ((,hash ,value))
+       ,@body)))
 
 ;;; ^sym
 
@@ -39,28 +41,28 @@
 
 (check "^ returns the value of the given qualified sym from this namespace"
   (^using foo
-    (__defmutable x 'expected)
-    (should (equal 'expected (^ foo/x)))))
+    (with-var x 'expected
+      (should (equal 'expected (^ foo/x))))))
 
 (check "^ returns values when given symbol is public"
-  (__defmutable foo/x 'expected)
-  (setf (ns-meta-public? (ns/get-symbol-meta 'foo 'x)) t)
-  (^using baz
-    (should (equal 'expected (^ foo/x)))))
+  (with-var foo/x 'expected
+    (setf (ns-meta-public? (ns/get-symbol-meta 'foo 'x)) t)
+    (^using baz
+      (should (equal 'expected (^ foo/x))))))
 
 (check "^ signals error when given symbol is undefined"
   (should-error (eval '(^ foo))))
 
 (check "^ signals error when given symbol is not accessible"
-  (__defmutable foo/x)
-  (^using baz
-    (should-error (eval `(^ foo/x)))))
+  (with-var foo/x nil
+    (^using baz
+      (eval `(^ foo/x)))))
 
 ;;; ^dynamic
 
 (check "^dynamic delegates to ^"
-  (__defmutable x 'expected)
-  (should (equal 'expected (^dynamic 'x))))
+  (with-var x 'expected
+    (should (equal 'expected (^dynamic 'x)))))
 
 
 ;; Local Variables:
