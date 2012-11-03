@@ -73,7 +73,7 @@
 ;;; --------------------------- Table Accessors -----------------------------------
 
 (defun ns/intern (ns sym)
-  "Intern the given ns/sym into the namespace table. Returns the tuple of (sym * hash) used as the key."
+  "Intern the given ns/sym into the namespace table. Returns the tuple of (hash * sym) used as the key."
   (let ((key (ns/make-key ns sym)))
     ;; Make sure existing metadata isn't lost.
     (unless (gethash key ns/symbols-table)
