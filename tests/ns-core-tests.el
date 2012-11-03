@@ -1,7 +1,6 @@
 (provide 'ns-core-tests)
-(require 'ert)
-(require 'cl)
 (require 'ns-core)
+(require 'ert)
 
 (defmacro check (desc &rest body)
   "Wrap ert-deftest with a simpler interface for testing namespaces."
@@ -58,10 +57,3 @@
 
 (check "get hash by name for uninterned symbol returns nil"
   (should (equal nil (ns/get-symbol-hash 'ns 'invalid))))
-
-
-
-
-;; Local Variables:
-;; no-byte-compile: t
-;; End:
