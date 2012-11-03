@@ -38,7 +38,7 @@
 
 ;;; ------------------------------- Utilities ----------------------------------
 
-(defun ns/find-public-function (ns sym)
+(defun ns/find-public-sym (ns sym)
   "Gets the hash and name of a function if it is public, else nil."
   (let* ((tuple (ns/make-key ns sym))
          (meta  (ns/get-symbol-meta ns sym)))
@@ -62,11 +62,15 @@ Returns the hash and name of the sym if if it succeeds, else nil"
   "Returns the hash for the given symbol, or nil if resolution fails"
   (let* ((tpl   (ns/split-sym sym))
          (ns    (or (car tpl) ns/current-ns))
-         (name  (cdr tpl)))
+         (name  (cdr tpl))
+         (hash  (ns/get-symbol-hash ns name)))
     (or
-     (when (ns/get-symbol-hash ns name) (ns/make-key ns name))
-     (ns/find-public-function ns name)
-     (ns/find-imported-sym sym ns/current-ns))))
+     ;; Resolve from this namespace, shadowing imports.
+     (when (and hash (equal ns/current-ns ns))
+       (ns/make-key ns name))
+     ;; Find imports or public syms.
+     (ns/find-imported-sym sym ns/current-ns)
+     (ns/find-public-sym ns name))))
 
 
 ;;; ------------------------------- Operators ----------------------------------
@@ -107,12 +111,18 @@ Returns the hash and name of the sym if if it succeeds, else nil"
 (defmacro ^call (fn &rest args)
   "Apply the given namespace-qualified function."
   (assert (symbolp fn))
-  (assert (__ns/accessible-p *ns* fn) ()
-          "Function `%s` is undefined or inaccessible from namespace `%s`."
-          fn *ns*)
-  (assert (functionp (eval `(^sym ,fn))) ()
-          "`%s` is not a function. Use `^` to evaluate vars." fn)
-  `(funcall `,(^sym ,fn) ,@args))
+  (let* ((tpl  (ns/resolve fn))
+         (hash (car-safe tpl))
+         (sym  (cdr-safe tpl))
+         )
+    (assert hash ()
+            "Function `%s` is undefined or inaccessible from namespace `%s`."
+            fn ns/current-ns
+            )
+    (assert (functionp hash) ()
+            "`%s` is not a function. Use `^` to evaluate vars." sym
+            )
+    `(funcall ',hash ,@args)))
 
 
 (defmacro* ^set (symbol value)
