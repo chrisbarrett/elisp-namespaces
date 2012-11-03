@@ -111,7 +111,7 @@
   "Make SYM publicly accessible."
   ;; Ensure metadata exists for SYM
   (ns/intern ns sym)
-  (let ((meta (gethash (ns/make-key ns sym) ns/symbols-table)))
+  (let ((meta (ns/get-symbol-meta ns sym)))
     (setf (ns-meta-public? meta) t)))
 
 (defun ns/import (ns-from ns-to sym)
