@@ -32,65 +32,72 @@
 (require 'ns-core)
 (eval-when-compile (require 'cl))
 
+(defvar ns/current-ns 'ns)
 
-(defmacro @sym (symbol)
+(defmacro ^sym (symbol)
   "Return the hashed name of SYM."
   (assert (symbolp symbol))
-  (let* ((xs  (__ns/split-sym symbol))
-         (ns  (nth 0 xs))
-         (sym (nth 1 xs))
-         (hash (__ns/symbol->hash ns sym)))
-    `',hash))
+  (let* ((tpl  (ns/split-sym symbol))
+         (ns   (or (car tpl) ns/current-ns))
+         (sym  (cdr tpl)))
+    `',(ns/hash (ns/qualify ns sym))))
 
 
-(defmacro @using (ns &rest body)
+(defmacro ^using (ns &rest body)
   "Dynamically rebind the current namespace to NS while evaluating BODY."
   (declare (indent 1))
   (assert (symbolp ns))
-  `(let ((*ns* ',ns))
+  `(let ((ns/current-ns ',ns))
      ,@body))
 
 
-(defun __ns/accessible-p (from-ns sym)
-  "Returns t if the given symbol is accessible from namespace FROM-NS, else nil."
-  (let* ((xs  (__ns/split-sym sym))
-         (ns  (nth 0 xs))
-         (sym (nth 1 xs))
-         (member? (eq ns from-ns))
-         (table (gethash ns __ns/exports-table))
-         (public? (when table (not (null (gethash sym table))))))
-    (or member? public?)))
+(defun ns/resolve-hash (sym)
+  "Returns the hash for the given symbol, or nil if resolution fails"
+  (let* ((tpl   (ns/split-sym sym))
+         (ns    (or (car tpl) ns/current-ns))
+         (name  (cdr tpl)))
+    (or
+     ;; Resolve qualified symbol from global table,
+     ;; or shadow unqualified imported symbol with local symbol.
+     (ns/get-symbol-hash ns name)
+
+     ;; Resolve unqualified symbol from imports.
+     (loop for (hash . (nm . _))
+           in (ns/get-imports ns/current-ns)
+           do (when (equal name (car nm)) (return hash))))))
 
 
-(defmacro @ (symbol)
-  "Evaluate a literal as a qualified symbol in the current namespace."
+(defmacro ^ (symbol)
+  "Evaluate SYMBOL as a var in the current namespace context."
   (assert (symbolp symbol))
-  (assert (and (__ns/accessible-p *ns* symbol)
-               (eval `(@sym ,symbol)))
-          nil "Symbol `%s` is undefined or inaccessible from namespace `%s`." symbol *ns*)
-  `(@using ,*ns* (eval (@sym ,symbol))))
+  (let ((hash (ns/resolve-hash symbol)) )
+    (assert hash ()
+            "Symbol `%s` is undefined or inaccessible from namespace `%s`."
+            symbol ns/current-ns)
+    hash))
 
 
-(defun @dynamic (symbol)
+(defun ^dynamic (symbol)
   "Evaluate a namespace-qualified symbol dynamically."
-  (eval `(@ ,symbol)))
+  (eval `(^ ,symbol)))
 
 
-(defmacro @call (fn &rest args)
+(defmacro ^call (fn &rest args)
   "Apply the given namespace-qualified function."
   (assert (symbolp fn))
-  (assert (__ns/accessible-p *ns* fn)
-          nil "Function `%s` is undefined or inaccessible from namespace `%s`." fn *ns*)
-  (assert (functionp (eval `(@sym ,fn)))
-          nil "`%s` is not a function. Use `@` to evaluate vars." fn)
-  `(funcall `,(@sym ,fn) ,@args))
+  (assert (__ns/accessible-p *ns* fn) ()
+          "Function `%s` is undefined or inaccessible from namespace `%s`."
+          fn *ns*)
+  (assert (functionp (eval `(^sym ,fn))) ()
+          "`%s` is not a function. Use `^` to evaluate vars." fn)
+  `(funcall `,(^sym ,fn) ,@args))
 
 
-(defmacro* @set (symbol value)
+(defmacro* ^set (symbol value)
   "Set the value of a namespace-qualified symbol."
   (assert (symbolp symbol))
 
-  (let* ((hash (eval `(@sym ,symbol)))
+  (let* ((hash (eval `(^sym ,symbol)))
          (name (__ns/qualify *ns* symbol)))
 
     (assert hash
@@ -100,12 +107,12 @@
             nil "Variable `%s` is undefined or inaccessible from namespace `%s`." symbol *ns*)
 
     (assert  (gethash hash __ns/mutable-syms)
-            nil "Invalid use of `@set`. `%s` is immutable." name)
+            nil "Invalid use of `^set`. `%s` is immutable." name)
 
     `(setq ,hash ,value)))
 
 
-(defmacro @lambda (args &rest body)
+(defmacro ^lambda (args &rest body)
   "A lambda function that captures the surrounding namespace environment."
   (declare (indent defun))
-  `(lambda ,args (@using ,*ns* ,@body)))
+  `(lambda ,args (^using ,*ns* ,@body)))
