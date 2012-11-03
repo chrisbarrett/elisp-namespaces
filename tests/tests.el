@@ -11,7 +11,8 @@
   `(ert-deftest
        ,(intern (replace-regexp-in-string "[ .]" "-" desc)) ()
      ;; Rebind tables for tests.
-     (let ((ns/symbols-table (copy-hash-table ns/symbols-table)))
+     (let ((ns/symbols-table (copy-hash-table ns/symbols-table))
+           (ns/imports-table (copy-hash-table ns/imports-table)))
        ,@body)))
 
 

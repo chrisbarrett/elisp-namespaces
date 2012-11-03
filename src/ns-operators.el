@@ -62,9 +62,7 @@
      (ns/get-symbol-hash ns name)
 
      ;; Resolve unqualified symbol from imports.
-     (loop for (hash . (nm . _))
-           in (ns/get-imports ns/current-ns)
-           do (when (equal name (car nm)) (return hash))))))
+     (error "Not implemented"))))
 
 
 (defmacro ^ (symbol)

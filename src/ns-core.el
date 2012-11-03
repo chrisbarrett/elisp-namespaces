@@ -37,7 +37,7 @@
   mutable?)
 
 (defconst ns/symbols-table (make-hash-table :test 'equal)
-  "Maps tuples of (hash * sym) to symbol metadata.")
+  "hash * name -> ns-meta")
 
 
 ;;; --------------------------- Symbol Processing ---------------------------------
@@ -58,9 +58,9 @@
 
 (defun ns/qualify (ns sym)
   "Ensure SYM is qualified with namespace NS."
-  (let* ((tpl  (__ns/split-sym sym))
+  (let* ((tpl  (ns/split-sym sym))
          (ns   (symbol-name ns))
-         (name (symbol-name (nth 1 tpl))))
+         (name (symbol-name (cdr tpl))))
     (intern (concat ns "/" name))))
 
 
@@ -73,9 +73,11 @@
 ;;; --------------------------- Table Accessors -----------------------------------
 
 (defun ns/intern (ns sym)
-  "Intern the given ns/sym into the namespace table. Returns a tuple of (sym * hash) used as the key."
+  "Intern the given ns/sym into the namespace table. Returns the tuple of (sym * hash) used as the key."
   (let ((key (ns/make-key ns sym)))
-    (puthash key (make-ns-meta) ns/symbols-table)
+    ;; Make sure existing metadata isn't lost.
+    (unless (gethash key ns/symbols-table)
+      (puthash key (make-ns-meta) ns/symbols-table))
     key))
 
 (defun hash-keys (table)
@@ -94,6 +96,43 @@
          (filtered (remove-if-not (lambda (tpl) (equal sym (cdr tpl)))
                                   (hash-keys ns/symbols-table))))
     (car-safe (car-safe filtered))))
+
+(defun ns/get-symbol-meta (ns sym)
+  "Gets the metadata for the given symbol, or nil no such symbol exists."
+  (gethash (ns/make-key ns sym) ns/symbols-table))
+
+
+;;; --------------------------- Imports/Exports -----------------------------------
+
+(defconst ns/imports-table (make-hash-table :test 'equal)
+  "ns -> (hash * name) -> (hash * name)")
+
+(defun ns/export (ns sym)
+  "Make SYM publicly accessible."
+  ;; Ensure metadata exists for SYM
+  (ns/intern ns sym)
+  (let ((meta (gethash (ns/make-key ns sym) ns/symbols-table)))
+    (setf (ns-meta-public? meta) t)))
+
+(defun ns/import (ns-from ns-to sym)
+  "Import a symbol defined by one namespace into another."
+  ;; Ensure SYM is publicly accessible.
+  (let* ((meta    (ns/get-symbol-meta ns-from sym))
+         (public? (when meta (ns-meta-public? meta))))
+    (assert public? nil
+            "Symbol `%s` is undefined or inaccessible from namespace `%s`"
+            (ns/qualify ns-from sym) ns-to))
+  ;; Add symbol to imports for NS-TO.
+  (let ((tbl (gethash ns-to ns/imports-table))
+        (val (ns/make-key ns-from sym)))
+    ;; Create table for NS-TO if it doesn't exist.
+    (unless tbl
+      (setq tbl (puthash ns-to (make-hash-table :test 'equal) ns/imports-table)))
+    ;; Insert `val` into the imports table for that namespace.
+    ;; Use `val` as both key and value for set semantics.
+    (puthash val val tbl)))
+
+
 
 
 ;; Local Variables:
