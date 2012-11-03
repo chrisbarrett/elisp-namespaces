@@ -35,6 +35,12 @@
   (ns/intern 'foo 'bar)
   (should (= 1 (hash-table-count ns/symbols-table))))
 
+(check "interned symbol data is preserved across duplicated insertions"
+  (ns/intern 'foo 'bar)
+  (setf (ns-meta-mutable? (ns/get-symbol-meta 'foo 'bar)) t)
+  (ns/intern 'foo 'bar)
+  (should (ns-meta-mutable? (ns/get-symbol-meta 'foo 'bar))))
+
 ;;; Retrieval
 
 (check "can get name by hash for interned symbol"
