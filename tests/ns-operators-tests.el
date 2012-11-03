@@ -38,16 +38,29 @@
 ;;; ^
 
 (check "^ returns the value of the given qualified sym from this namespace"
-  (__defmutable foo/bar 'expected)
-  (should (equal 'expected (^ foo/bar))))
+  (^using foo
+    (__defmutable x 'expected)
+    (should (equal 'expected (^ foo/x)))))
+
+(check "^ returns values when given symbol is public"
+  (__defmutable foo/x 'expected)
+  (setf (ns-meta-public? (ns/get-symbol-meta 'foo 'x)) t)
+  (^using baz
+    (should (equal 'expected (^ foo/x)))))
 
 (check "^ signals error when given symbol is undefined"
   (should-error (eval '(^ foo))))
 
 (check "^ signals error when given symbol is not accessible"
-  (__defmutable foo/bar)
-  (let ((ns/current-ns 'baz))
-    (should-error (eval '(^ foo/bar)))))
+  (__defmutable foo/x)
+  (^using baz
+    (should-error (eval `(^ foo/x)))))
+
+;;; ^dynamic
+
+(check "^dynamic delegates to ^"
+  (__defmutable x 'expected)
+  (should (equal 'expected (^dynamic 'x))))
 
 
 ;; Local Variables:
