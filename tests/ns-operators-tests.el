@@ -64,6 +64,22 @@
   (with-var x 'expected
     (should (equal 'expected (^dynamic 'x)))))
 
+;;; ^set
+
+(check "^set modifies mutable vars using unqualified symbol"
+  (^using foo
+    (with-var x ()
+      (setf (ns-meta-mutable? (ns/get-symbol-meta 'foo 'x)) t)
+      (^set x 'expected)
+      (should (equal 'expected (eval (ns/get-symbol-hash 'foo 'x)))))))
+
+(check "^set modifies mutable vars using qualified symbol"
+  (^using foo
+    (with-var x ()
+      (setf (ns-meta-mutable? (ns/get-symbol-meta 'foo 'x)) t)
+      (^set foo/x 'expected)
+      (should (equal 'expected (eval (ns/get-symbol-hash 'foo 'x)))))))
+
 
 ;; Local Variables:
 ;; no-byte-compile: t
