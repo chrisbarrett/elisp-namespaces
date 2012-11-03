@@ -38,14 +38,16 @@
 
 ;;; ------------------------------- Utilities ----------------------------------
 
-(defun ns/public-function-hash (ns sym)
-  "Gets the hash of a function if it is public, else nil."
-  (let ((hash (ns/get-symbol-hash ns sym)))
-    (when (and hash (ns-meta-public? (ns/get-symbol-meta ns sym)))
-      hash)))
+(defun ns/find-public-function (ns sym)
+  "Gets the hash and name of a function if it is public, else nil."
+  (let* ((tuple (ns/make-key ns sym))
+         (meta  (ns/get-symbol-meta ns sym)))
+    (when (and meta (ns-meta-public? meta))
+      tuple)))
 
 (defun ns/find-imported-sym (unqualified-sym ns)
-  "Try to find the given symbol in the imports for namespace NS."
+  "Try to find the given symbol in the imports for namespace NS.
+Returns the hash and name of the sym if if it succeeds, else nil"
   (let* ((tbl     (gethash ns ns/imports-table))
          (tuples  (when tbl (hash-keys tbl)))
          (match-p (lambda (tpl)
@@ -53,19 +55,18 @@
                            (sym  (cdr (ns/split-sym name))))
                       (equal sym unqualified-sym)))))
     (car-safe
-     (car-safe
-      (when tuples
-        (remove-if-not match-p tuples))))))
+     (when tuples
+       (remove-if-not match-p tuples)))))
 
-(defun ns/resolve-hash (sym)
+(defun ns/resolve (sym)
   "Returns the hash for the given symbol, or nil if resolution fails"
   (let* ((tpl   (ns/split-sym sym))
          (ns    (or (car tpl) ns/current-ns))
          (name  (cdr tpl)))
     (or
-     (ns/get-symbol-hash ns name)
-     (ns/public-function-hash ns name)
-     (car-safe (ns/find-imported-sym sym ns/current-ns)))))
+     (when (ns/get-symbol-hash ns name) (ns/make-key ns name))
+     (ns/find-public-function ns name)
+     (ns/find-imported-sym sym ns/current-ns))))
 
 
 ;;; ------------------------------- Operators ----------------------------------
@@ -73,7 +74,7 @@
 (defmacro ^sym (symbol)
   "Return the hashed name of SYM."
   (assert (symbolp symbol))
-  (let ((hash (ns/resolve-hash symbol)))
+  (let ((hash (car-safe (ns/resolve symbol))))
     (assert hash ()
             "Symbol `%s` is undefined or inaccessible from namespace `%s`."
             symbol ns/current-ns)
@@ -91,7 +92,7 @@
 (defmacro ^ (symbol)
   "Evaluate SYMBOL as a var in the current namespace context."
   (assert (symbolp symbol))
-  (let ((hash (ns/resolve-hash symbol)))
+  (let ((hash (car-safe (ns/resolve symbol))))
     (assert hash ()
             "Symbol `%s` is undefined or inaccessible from namespace `%s`."
             symbol ns/current-ns)
@@ -118,19 +119,23 @@
   "Set the value of a namespace-qualified symbol."
   (assert (symbolp symbol))
 
-  (let* ((hash (eval `(^sym ,symbol)))
-         (name (__ns/qualify *ns* symbol)))
+  (let* ((tpl  (ns/resolve symbol))
+         (hash (car-safe tpl))
+         (name (cdr-safe tpl)))
+    (cond
+     (tpl
+      (let* ((tpl  (ns/split-sym name))
+             (ns   (car-safe tpl))
+             (sym  (cdr-safe tpl))
+             (meta (ns/get-symbol-meta ns sym))
+             )
+        (assert (ns-meta-mutable? meta) ()
+                "Invalid use of `^set`. `%s` is immutable." symbol)
+        `(setq ,hash ,value)))
 
-    (assert hash ()
-            "Variable `%s` is undefined or inaccessible from namespace `%s`." symbol *ns*)
-
-    (assert (__ns/accessible-p *ns* symbol) ()
-            "Variable `%s` is undefined or inaccessible from namespace `%s`." symbol *ns*)
-
-    (assert (gethash hash __ns/mutable-syms) ()
-            "Invalid use of `^set`. `%s` is immutable." name)
-
-    `(setq ,hash ,value)))
+     ;; Could not resolve SYMBOL.
+     (t (error "Variable `%s` is undefined or inaccessible from namespace `%s`."
+               symbol ns/current-ns)))))
 
 
 (defmacro ^lambda (args &rest body)
