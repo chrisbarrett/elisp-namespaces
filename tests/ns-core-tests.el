@@ -23,6 +23,13 @@
   (ns/intern 'foo 'bar)
   (should (= 1 (hash-table-count ns/symbols-table))))
 
+(check "intern returns the tuple with the hash used"
+  (let ((hash (ns/hash 'foo/bar)))
+    (should (equal hash (car (ns/intern 'foo 'bar))))))
+
+(check "intern returns the tuple with the name used."
+  (should (equal 'foo/bar (cdr (ns/intern 'foo 'bar)))))
+
 (check "after several interns the same symbol is not present multiple times"
   (ns/intern 'foo 'bar)
   (ns/intern 'foo 'bar)
