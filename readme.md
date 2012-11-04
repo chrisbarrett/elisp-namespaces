@@ -140,7 +140,7 @@ adding it to their namespace imports and using `@`:
 (enterprise/captain)                   ; => "Picard"
 
 (namespace borg :import [ enterprise ])
-(@ captain)                            ; => "Picard"
+(@call captain)                        ; => "Picard"
 ```
 These accessor functions add a nice layer of safety: if your requirements change down the
 track (eg, you need logging), you can safely reimplement an acccessor by hand without
@@ -224,7 +224,7 @@ Import public symbols from another namespace:
 (def x "Hello")
 
 (namespace bar :import [foo])
-(@ x)                            ; => "Hello"
+(@call x)                            ; => "Hello"
 ```
 
 The default behaviour is to import all public symbols. You can load a subset
