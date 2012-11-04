@@ -5,55 +5,55 @@
 (require 'ns-operators)
 
 
-;;; ^def
+;;; def
 
-(check "can define and read var created with ^def"
-  (^def var 'expected)
-  (should (equal 'expected (^ var))))
+(check "can define and read var created with def"
+  (def var 'expected)
+  (should (equal 'expected (@ var))))
 
-(check "should get error when setting a var created with ^def"
-  (^def var nil)
-  (should-error (eval `(^set var 'fail))))
+(check "should get error when setting a var created with def"
+  (def var nil)
+  (should-error (eval `(@set var 'fail))))
 
 
-;;; ^defmutable
+;;; defmutable
 
-(check "can define and read var created with ^defmutable"
-  (^defmutable var 'expected)
-  (should (equal 'expected (^ var))))
+(check "can define and read var created with defmutable"
+  (defmutable var 'expected)
+  (should (equal 'expected (@ var))))
 
-(check "can set namespaced var created with ^defmutable"
-  (^defmutable var)
-  (^set var 'expected)
-  (should (equal 'expected (^ var))))
+(check "can set namespaced var created with defmutable"
+  (defmutable var)
+  (@set var 'expected)
+  (should (equal 'expected (@ var))))
 
 
 ;;; Redefinitions
 
-(check "can redefine ^def vars as ^defmutable vars and set"
-  (^def var nil)
-  (^defmutable var)
-  (^set var 'expected)
-  (should (equal 'expected (^ var))))
+(check "can redefine def vars as defmutable vars and set"
+  (def var nil)
+  (defmutable var)
+  (@set var 'expected)
+  (should (equal 'expected (@ var))))
 
-(check "should get error when redefining a ^defmutable as a ^def and using ^set"
-  (^defmutable var)
-  (^def var nil)
-  (should-error (eval `(^set var 'x))))
+(check "should get error when redefining a defmutable as a def and using @set"
+  (defmutable var)
+  (def var nil)
+  (should-error (eval `(@set var 'x))))
 
-;;; ^defn
+;;; defn
 
-(check "can call function defined with ^defn"
-  (^defn x () 'expected)
-  (should (equal 'expected (^call x))))
+(check "can call function defined with defn"
+  (defn x () 'expected)
+  (should (equal 'expected (@call x))))
 
-(check "^defn should tolerate body form in docstring position"
-  (^defn x () "expected")
-  (should (equal "expected" (^call x))))
+(check "defn should tolerate body form in docstring position"
+  (defn x () "expected")
+  (should (equal "expected" (@call x))))
 
-(check "^defn should be callable with arguments"
-  (^defn sqr (i) (* i i))
-  (should (equal 9 (^call sqr 3))))
+(check "defn should be callable with arguments"
+  (defn sqr (i) (* i i))
+  (should (equal 9 (@call sqr 3))))
 
 
 

@@ -1,9 +1,8 @@
 (provide 'ns-tests '(ns-core-tests
                      ns-operators-tests))
 (require 'ert)
+(require 'namespaces)
 (setq lexical-binding t)
-
-(add-to-list 'load-path (concat user-emacs-directory "elisp-namespaces/" "src/"))
 (add-to-list 'load-path (concat user-emacs-directory "elisp-namespaces/" "tests/"))
 
 
@@ -28,6 +27,7 @@
            (ns/current-ns (gensym)))
        ,@body)))
 
+;;; ----------------------------------------------------------------------------
 
 (require 'ns-core-tests)
 (require 'ns-operators-tests)
@@ -35,8 +35,7 @@
 (require 'ns-namespace-tests)
 (require 'ns-integration-tests)
 
-
-
+;;; ----------------------------------------------------------------------------
 
 ;; Local Variables:
 ;; no-byte-compile: t

@@ -75,7 +75,7 @@ Returns the hash and name of the sym if if it succeeds, else nil"
 
 ;;; ------------------------------- Operators ----------------------------------
 
-(defmacro ^sym (symbol)
+(defmacro @sym (symbol)
   "Return the hashed name of SYM."
   (assert (symbolp symbol))
   (let ((hash (car-safe (ns/resolve symbol))))
@@ -85,7 +85,7 @@ Returns the hash and name of the sym if if it succeeds, else nil"
     `',hash))
 
 
-(defmacro ^using (ns &rest body)
+(defmacro @using (ns &rest body)
   "Dynamically rebind the current namespace to NS while evaluating BODY."
   (declare (indent 1))
   (assert (symbolp ns))
@@ -93,7 +93,7 @@ Returns the hash and name of the sym if if it succeeds, else nil"
      ,@body))
 
 
-(defmacro ^ (symbol)
+(defmacro @ (symbol)
   "Evaluate SYMBOL as a var in the current namespace context."
   (assert (symbolp symbol))
   (let ((hash (car-safe (ns/resolve symbol))))
@@ -103,12 +103,12 @@ Returns the hash and name of the sym if if it succeeds, else nil"
     hash))
 
 
-(defun ^dynamic (symbol)
+(defun @dynamic (symbol)
   "Evaluate a namespace-qualified symbol dynamically."
-  (eval `(^ ,symbol)))
+  (eval `(@ ,symbol)))
 
 
-(defmacro ^call (fn &rest args)
+(defmacro @call (fn &rest args)
   "Apply the given namespace-qualified function."
   (assert (symbolp fn))
   (let* ((tpl  (ns/resolve fn))
@@ -120,12 +120,12 @@ Returns the hash and name of the sym if if it succeeds, else nil"
             fn ns/current-ns
             )
     (assert (functionp hash) ()
-            "`%s` is not a function. Use `^` to evaluate vars." sym
+            "`%s` is not a function. Use `@` to evaluate vars." sym
             )
     `(funcall ',hash ,@args)))
 
 
-(defmacro* ^set (symbol value)
+(defmacro* @set (symbol value)
   "Set the value of a namespace-qualified symbol."
   (assert (symbolp symbol))
 
@@ -140,7 +140,7 @@ Returns the hash and name of the sym if if it succeeds, else nil"
              (meta (ns/get-symbol-meta ns sym))
              )
         (assert (ns-meta-mutable? meta) ()
-                "Invalid use of `^set`. `%s` is immutable." symbol)
+                "Invalid use of `@set`. `%s` is immutable." symbol)
         `(setq ,hash ,value)))
 
      ;; Could not resolve SYMBOL.
@@ -148,10 +148,10 @@ Returns the hash and name of the sym if if it succeeds, else nil"
                symbol ns/current-ns)))))
 
 
-(defmacro ^lambda (args &rest body)
+(defmacro @lambda (args &rest body)
   "A lambda function that captures the surrounding namespace environment."
   (declare (indent defun))
-  `(lambda ,args (^using ,ns/current-ns ,@body)))
+  `(lambda ,args (@using ,ns/current-ns ,@body)))
 
 
 

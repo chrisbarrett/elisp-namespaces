@@ -143,9 +143,11 @@
 
 (defun ns/import-all (from-ns into-ns)
   "Import all public symbols from one namespace into another."
-  (mapcar (lambda (tpl)
-            (ns/import from-ns into-ns (cdr tpl)))
-          (hash-keys (gethash from-ns ns/exports-table))))
+  (let ((tbl (gethash from-ns ns/exports-table)))
+    (when tbl
+      (mapcar (lambda (tpl)
+		(ns/import from-ns into-ns (cdr tpl)))
+	      (hash-keys tbl)))))
 
 
 

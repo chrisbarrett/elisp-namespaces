@@ -120,9 +120,9 @@
 
 ;;; -------------------------- Namespace Macro ---------------------------------
 
-(defmacro* @namespace (name &key import export use packages)
+(defmacro* namespace (name &key import export use packages)
   (declare (indent 1))
-  (^using ns
+  (@using ns
     ;; Export the given symbols.
     (mapc (lambda (x) (ns/export name x))
           export)
@@ -138,9 +138,6 @@
   ;; Rebind the current namespace.
   (setq ns/current-ns name)
   `',name)
-
-
-
 
 
 

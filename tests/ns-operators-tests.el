@@ -24,105 +24,105 @@
     `(flet ((,hash ,arglist ,body-form))
        ,@body)))
 
-;;; ^sym
+;;; @sym
 
-(check "^sym returns the hash of the given qualified name"
+(check "@sym returns the hash of the given qualified name"
   (let ((hash (car (ns/intern 'foo 'bar))))
-    (^using foo
-      (should (equal hash (^sym foo/bar))))))
+    (@using foo
+      (should (equal hash (@sym foo/bar))))))
 
-(check "^sym uses this namespace when resolving unqualified symbols"
+(check "@sym uses this namespace when resolving unqualified symbols"
   (let ((hash (car (ns/intern 'foo 'bar)))
         (ns/current-ns 'foo))
-    (should (equal hash (^sym bar)))))
+    (should (equal hash (@sym bar)))))
 
-(check "^sym signals an error when the given symbol is not public"
+(check "@sym signals an error when the given symbol is not public"
   (let ((hash (car (ns/intern 'foo 'bar))))
-    (should-error (eval '(^sym foo/bar)))))
+    (should-error (eval '(@sym foo/bar)))))
 
-(check "^sym signals an error when the given symbol is undefined"
-  (should-error (eval '(^sym foo/bar))))
+(check "@sym signals an error when the given symbol is undefined"
+  (should-error (eval '(@sym foo/bar))))
 
-;;; ^using
+;;; @using
 
-(check "^using rebinds the current namespace for body"
-  (^using foo (should (equal 'foo ns/current-ns))))
+(check "@using rebinds the current namespace for body"
+  (@using foo (should (equal 'foo ns/current-ns))))
 
-(check "^using reverts the current namespace after evalutating body"
+(check "@using reverts the current namespace after evalutating body"
   (let* ((g (gensym))
          (ns/current-ns g))
-    (^using foo)
+    (@using foo)
     (should (equal g ns/current-ns))))
 
-;;; ^
+;;; @
 
-(check "^ returns the value of the given qualified sym from this namespace"
-  (^using foo
+(check "@ returns the value of the given qualified sym from this namespace"
+  (@using foo
     (with-var x 'expected
-      (should (equal 'expected (^ foo/x))))))
+      (should (equal 'expected (@ foo/x))))))
 
-(check "^ returns values when given symbol is public"
+(check "@ returns values when given symbol is public"
   (with-var foo/x 'expected
     (setf (ns-meta-public? (ns/get-symbol-meta 'foo 'x)) t)
-    (^using baz
-      (should (equal 'expected (^ foo/x))))))
+    (@using baz
+      (should (equal 'expected (@ foo/x))))))
 
-(check "^ signals error when given symbol is undefined"
-  (should-error (eval '(^ foo))))
+(check "@ signals error when given symbol is undefined"
+  (should-error (eval '(@ foo))))
 
-(check "^ signals error when given symbol is not accessible"
+(check "@ signals error when given symbol is not accessible"
   (with-var foo/x nil
-    (^using baz
-      (should-error (eval `(^ foo/x))))))
+    (@using baz
+      (should-error (eval `(@ foo/x))))))
 
-;;; ^dynamic
+;;; @dynamic
 
-(check "^dynamic delegates to ^"
+(check "@dynamic delegates to @"
   (with-var x 'expected
-    (should (equal 'expected (^dynamic 'x)))))
+    (should (equal 'expected (@dynamic 'x)))))
 
-;;; ^set
+;;; @set
 
-(check "^set modifies mutable vars using unqualified symbol"
-  (^using foo
+(check "@set modifies mutable vars using unqualified symbol"
+  (@using foo
     (with-var x ()
       (setf (ns-meta-mutable? (ns/get-symbol-meta 'foo 'x)) t)
-      (^set x 'expected)
+      (@set x 'expected)
       (should (equal 'expected (eval (ns/get-symbol-hash 'foo 'x)))))))
 
-(check "^set modifies mutable vars using qualified symbol"
-  (^using foo
+(check "@set modifies mutable vars using qualified symbol"
+  (@using foo
     (with-var x ()
       (setf (ns-meta-mutable? (ns/get-symbol-meta 'foo 'x)) t)
-      (^set foo/x 'expected)
+      (@set foo/x 'expected)
       (should (equal 'expected (eval (ns/get-symbol-hash 'foo 'x)))))))
 
-;;; ^call
+;;; @call
 
-(check "^call applies qualified function"
-  (^using foo
+(check "@call applies qualified function"
+  (@using foo
     (with-fn foo/x () 'expected
-      (should (equal 'expected (^call foo/x))))))
+      (should (equal 'expected (@call foo/x))))))
 
-(check "^call applies arguments"
-  (^using foo
+(check "@call applies arguments"
+  (@using foo
     (with-fn foo/x (i) i
-      (should (equal 'expected (^call foo/x 'expected))))))
+      (should (equal 'expected (@call foo/x 'expected))))))
 
-(check "^call signals error when applying an inaccessbile fn"
+(check "@call signals error when applying an inaccessbile fn"
   (with-fn foo/x () 'fail
-    (^using bar
-      (should-error (eval '(^call foo/x))))))
+    (@using bar
+      (should-error (eval '(@call foo/x))))))
 
-(check "^call signals error when applying an undefined fn"
-  (should-error (eval `(^call fail))))
+(check "@call signals error when applying an undefined fn"
+  (should-error (eval `(@call fail))))
 
-;;; ^lambda
+;;; @lambda
 
-(check "^lambda captures namespace environment"
+(check "@lambda captures namespace environment"
   (let ((x))
-    (^using foo (setq x (^lambda () ns/current-ns)))
-    (^using bar (should (equal 'foo (funcall x))))))
+    (@using foo (setq x (@lambda () ns/current-ns)))
+    (@using bar (should (equal 'foo (funcall x))))))
 
 
 

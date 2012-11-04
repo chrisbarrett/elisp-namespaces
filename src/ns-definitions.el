@@ -35,7 +35,7 @@
 (setq lexical-binding t)
 
 
-(defmacro ^def (symbol value &optional docstring)
+(defmacro def (symbol value &optional docstring)
   "Define SYMBOL as an immutable var in the current namespace. Otherwise identical to `defconst`."
   (assert (symbolp symbol))
   (let* ((tpl  (ns/intern ns/current-ns symbol))
@@ -48,7 +48,7 @@
        ',name)))
 
 
-(defmacro ^defmutable (symbol &optional value docstring)
+(defmacro defmutable (symbol &optional value docstring)
   "Define SYMBOL as a mutable var in the current namespace. Otherwise identical to `defvar`."
   (assert (symbolp symbol))
   (let* ((tpl  (ns/intern ns/current-ns symbol))
@@ -61,7 +61,7 @@
        ',name)))
 
 
-(defmacro ^defn (name arglist &optional docstring &rest body)
+(defmacro defn (name arglist &optional docstring &rest body)
   "Define a namespace-qualified function.
 If BODY contains a call to (interactive), this will expand to `defun`. Otherwise, `defun*` is used."
   (declare (indent defun))
@@ -87,7 +87,7 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
          (,defun-form ,hash ,arglist
            ,docstring
            ,interactive
-           (^using ,ns/current-ns ,@body))
+           (@using ,ns/current-ns ,@body))
          ',qual))))
 
 
