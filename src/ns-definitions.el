@@ -53,6 +53,31 @@
     `(defvar ,hash ,value ,docstring)))
 
 
+(defmacro ^defn (name arglist &optional docstring &rest body)
+  "Define a namespace-qualified function.
+If BODY contains a call to (interactive), this will expand to `defun`. Otherwise, `defun*` is used."
+  (declare (indent defun))
+
+  (flet   ((interactive-p (s) (equalp (car-safe s) 'interactive)))
+    (let* ((hash  (car-safe (ns/intern ns/current-ns name)))
+           (body  body)
+           (doc   docstring)
+           ;; Tolerate body forms in the `docstring` position.
+           (forms (cond
+                   ((and (stringp doc) body) (list* doc nil body))
+                   (body (list* nil doc body))
+                   (t (list nil doc))))
+           ;; Extract parts.
+           (docstring   (or (first forms) ""))
+           (interactive (find-if #'interactive-p forms))
+           (body        (remove-if #'interactive-p (rest forms)))
+           (defun-form  (if interactive 'defun 'defun*))
+           )
+      `(,defun-form ,hash ,arglist
+         ,docstring
+         ,interactive
+         (^using ,ns/current-ns ,@body)))))
+
 ;; Local Variables:
 ;; byte-compile-warnings: (not cl-functions)
 ;; End:

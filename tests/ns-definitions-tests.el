@@ -28,10 +28,7 @@
   (should (equal 'expected (^ var))))
 
 
-;;; Variable Definition
-
-(check "should get error when getting the value of an undefined var"
-  (should-error (eval `(^ fail))))
+;;; Redefinitions
 
 (check "can redefine ^def vars as ^defmutable vars and set"
   (^def var nil)
@@ -43,6 +40,21 @@
   (^defmutable var)
   (^def var nil)
   (should-error (eval `(^set var 'x))))
+
+;;; ^defn
+
+(check "can call function defined with ^defn"
+  (^defn x () 'expected)
+  (should (equal 'expected (^call x))))
+
+(check "^defn should tolerate body form in docstring position"
+  (^defn x () "expected")
+  (should (equal "expected" (^call x))))
+
+(check "^defn should be callable with arguments"
+  (^defn sqr (i) (* i i))
+  (should (equal 9 (^call sqr 3))))
+
 
 
 ;; Local Variables:

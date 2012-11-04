@@ -3,7 +3,6 @@
 (require 'ns-core)
 (require 'cl)
 (require 'ert)
-(setq lexical-binding t)
 
 (defmacro with-var (sym value &rest body)
   "Define a namespaced var within BODY forms."
@@ -43,7 +42,6 @@
 
 (check "^sym signals an error when the given symbol is undefined"
   (should-error (eval '(^sym foo/bar))))
-
 
 ;;; ^using
 
