@@ -15,6 +15,11 @@
   (def var nil)
   (should-error (eval `(@set var 'fail))))
 
+(check "def creates accessor function for public vars"
+  (@using foo
+    (ns/export 'foo 'x)
+    (def x 'expected)
+    (should (equal 'expected (foo/x)))))
 
 ;;; defmutable
 
@@ -23,18 +28,25 @@
   (should (equal 'expected (@ var))))
 
 (check "can set namespaced var created with defmutable"
-  (defmutable var)
-  (@set var 'expected)
-  (should (equal 'expected (@ var))))
+  (@using foo
+     (defmutable var)
+     (@set var 'expected)
+     (should (equal 'expected (@ var)))))
 
+(check "defmutable creates accessor function for public vars"
+  (@using foo
+    (ns/export 'foo 'x)
+    (defmutable x 'expected)
+    (should (equal 'expected (foo/x)))))
 
 ;;; Redefinitions
 
 (check "can redefine def vars as defmutable vars and set"
-  (def var nil)
-  (defmutable var)
-  (@set var 'expected)
-  (should (equal 'expected (@ var))))
+  (@using foo
+    (def var nil)
+    (defmutable var)
+    (@set var 'expected)
+    (should (equal 'expected (@ var)))))
 
 (check "should get error when redefining a defmutable as a def and using @set"
   (defmutable var)

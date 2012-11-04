@@ -35,31 +35,22 @@
 (setq lexical-binding t)
 
 
-(defmacro def (symbol value &optional docstring)
-  "Define SYMBOL as an immutable var in the current namespace. Otherwise identical to `defconst`."
-  (assert (symbolp symbol))
-  (let* ((tpl  (ns/intern ns/current-ns symbol))
-         (hash (car tpl))
-         (name (cdr tpl)))
-    ;; Ensure this is now an immutable var.
-    (setf (ns-meta-mutable? (ns/get-symbol-meta ns/current-ns symbol)) nil)
-    `(progn
-       (defconst ,hash ,value ,docstring)
-       ',name)))
+;;; ------------------------------- Utilities ----------------------------------
 
+(defun ns/exported-p (sym)
+  (ns-meta-public? (ns/get-symbol-meta ns/current-ns sym)))
 
-(defmacro defmutable (symbol &optional value docstring)
-  "Define SYMBOL as a mutable var in the current namespace. Otherwise identical to `defvar`."
-  (assert (symbolp symbol))
-  (let* ((tpl  (ns/intern ns/current-ns symbol))
-         (hash (car tpl))
-         (name (cdr tpl)))
-    ;; Ensure this is now a mutable var.
-    (setf (ns-meta-mutable? (ns/get-symbol-meta ns/current-ns symbol)) t)
-    `(progn
-       (defvar ,hash ,value ,docstring)
-       ',name)))
+(defmacro defaccessor (sym docstring)
+  "Make a default accessor function for a public var."
+  (let* ((name (ns/qualify ns/current-ns sym))
+         (doc  (or docstring
+                   (format "Auto-generated getter for %s" name)))
+         (hash (ns/get-symbol-hash ns/current-ns sym)))
+    `(defun ,name ()
+       ,doc
+       ,hash)))
 
+;;; ----------------------------------------------------------------------------
 
 (defmacro defn (name arglist &optional docstring &rest body)
   "Define a namespace-qualified function.
@@ -82,7 +73,6 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
          (interactive  (find-if interactive? forms))
          (body         (remove-if interactive? (rest forms)))
          (defun-form   (if interactive 'defun 'defun*))
-         (export?      (ns-meta-public? (ns/get-symbol-meta ns/current-ns qual)))
          )
     `(progn
        (,defun-form ,hash ,arglist
@@ -90,10 +80,50 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
          ,interactive
          (@using ,ns/current-ns ,@body))
 
-       ,(when export?
+       ,(when (ns/exported-p qual)
           `(defalias ',qual ',hash))
 
        ',qual)))
+
+
+(defmacro def (symbol value &optional docstring)
+  "Define SYMBOL as an immutable var in the current namespace. Otherwise identical to `defconst`."
+  (assert (symbolp symbol))
+  (let* ((tpl  (ns/intern ns/current-ns symbol))
+         (hash (car tpl))
+         (name (cdr tpl))
+         (qual (ns/qualify ns/current-ns name))
+         )
+    ;; Ensure this is now an immutable var.
+    (setf (ns-meta-mutable? (ns/get-symbol-meta ns/current-ns symbol)) nil)
+
+    `(progn
+       (defconst ,hash ,value ,docstring)
+
+       ,(when (ns/exported-p qual)
+          `(defaccessor ,qual ,docstring))
+
+       ',name)))
+
+
+(defmacro defmutable (symbol &optional value docstring)
+  "Define SYMBOL as a mutable var in the current namespace. Otherwise identical to `defvar`."
+  (assert (symbolp symbol))
+  (let* ((tpl  (ns/intern ns/current-ns symbol))
+         (hash (car tpl))
+         (name (cdr tpl))
+         (qual (ns/qualify ns/current-ns name))
+         )
+    ;; Ensure this is now a mutable var.
+    (setf (ns-meta-mutable? (ns/get-symbol-meta ns/current-ns symbol)) t)
+
+    `(progn
+       (defvar ,hash ,value ,docstring)
+
+       ,(when (ns/exported-p qual)
+          `(defaccessor ,qual ,docstring))
+
+       ',name)))
 
 
 ;; Local Variables:

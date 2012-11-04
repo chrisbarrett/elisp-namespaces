@@ -97,6 +97,15 @@
       (@set foo/x 'expected)
       (should (equal 'expected (eval (ns/get-symbol-hash 'foo 'x)))))))
 
+(check "@set signals error when target is undefined"
+  (should-error (eval `(@set foo/x 'error))))
+
+(check "@set signals error when target is inaccessible"
+  (@using foo
+    (with-var x ()
+      (setf (ns-meta-mutable? (ns/get-symbol-meta 'foo 'x)) t)
+      (@using bar (should-error (eval `(@set foo/x 'error)))))))
+
 ;;; @call
 
 (check "@call applies qualified function"

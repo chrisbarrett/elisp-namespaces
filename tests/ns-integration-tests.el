@@ -70,14 +70,6 @@
   (should (equal 'expected (@ public))))
 
 
-(check "can set imported public var using unqualified symbol"
-  (namespace foo :export [ public ])
-  (defmutable public)
-  (namespace bar :import [ foo ])
-  (@set public 'expected)
-  (should (equal 'expected (@ public))))
-
-
 (check "can access public var using qualified symbol"
   (namespace foo :export [ public ])
   (def public 'expected)
@@ -85,12 +77,11 @@
   (should (equal 'expected (@ foo/public))))
 
 
-(check "can set public var using qualified symbol"
+(check "cannot set public var from another namespace"
   (namespace foo :export [ public ])
   (defmutable public)
   (namespace bar)
-  (@set foo/public 'expected)
-  (should (equal 'expected (@ foo/public))))
+  (should-error (eval `(@set foo/public 'fail))))
 
 
 
