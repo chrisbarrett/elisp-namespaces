@@ -24,6 +24,7 @@
      ;; are preserved.
      (let ((ns/symbols-table (clear-hash (copy-hash-table ns/symbols-table)))
            (ns/imports-table (clear-hash (copy-hash-table ns/imports-table)))
+           (ns/exports-table (clear-hash (copy-hash-table ns/exports-table)))
            (ns/current-ns (gensym)))
        ,@body)))
 
@@ -32,6 +33,7 @@
 (require 'ns-operators-tests)
 (require 'ns-definitions-tests)
 (require 'ns-integration-tests)
+
 
 ;; Local Variables:
 ;; no-byte-compile: t

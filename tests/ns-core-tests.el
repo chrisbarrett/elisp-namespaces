@@ -63,7 +63,7 @@
 
 ;;; Exporting
 
-(check "can export symbols"
+(check "exported symbols are public"
   (ns/export 'foo 'bar)
   (should (ns-meta-public? (gethash (ns/make-key 'foo 'bar)
                                     ns/symbols-table))))
@@ -87,7 +87,11 @@
   (ns/import 'foo 'bar 'x)
   (should (= 1 (hash-table-count (gethash 'bar ns/imports-table)))))
 
-
+(check "can import all public symbols from one namespace into another"
+  (ns/export 'foo 'x)
+  (ns/export 'foo 'y)
+  (ns/import-all 'foo 'bar)
+  (should (equal 2 (hash-table-count (gethash 'bar ns/imports-table)))))
 
 ;; Local Variables:
 ;; no-byte-compile: t

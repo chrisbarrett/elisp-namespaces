@@ -145,10 +145,7 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
     "Load dependencies. If dependenices is empty, load all symbols exported by FROM-NS."
     (if deps
         (loop for sym in deps do (ns/import from-ns into-ns sym))
-      (loop for tpl being the hash-keys of ns/symbols-table
-            and sym = (cdr tpl)
-            when (string-match-p from-ns (symbol-name sym))
-            do (ns/import from-ns into-ns sym))))
+      (ns/import-all from-ns into-ns)))
 
 
   (^defn autoload-dep (feature dep)

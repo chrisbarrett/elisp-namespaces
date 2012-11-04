@@ -104,15 +104,29 @@
 
 ;;; --------------------------- Imports/Exports -----------------------------------
 
-(defconst ns/imports-table (make-hash-table :test 'equal)
+(defconst ns/imports-table (make-hash-table)
   "ns -> (hash * name) -> (hash * name)")
+
+(defconst ns/exports-table (make-hash-table)
+  "ns -> (hash * name) -> (hash * name)")
+
+(defun ns/puthash-in (outer-key inner-key inner-value table)
+  "Insert a value into a nested hash-table, creating the outer table if needed."
+  (let ((tbl (gethash outer-key table)))
+    (unless tbl
+      (setq tbl (make-hash-table :test 'equal))
+      (puthash outer-key tbl table))
+    (puthash inner-key inner-value tbl)))
 
 (defun ns/export (ns sym)
   "Make SYM publicly accessible."
   ;; Ensure metadata exists for SYM
   (ns/intern ns sym)
-  (let ((meta (ns/get-symbol-meta ns sym)))
-    (setf (ns-meta-public? meta) t)))
+  (let ((tpl  (ns/make-key ns sym) )
+        (meta (ns/get-symbol-meta ns sym)))
+    (ns/puthash-in ns tpl tpl ns/exports-table)
+    (setf (ns-meta-public? meta) t)
+    tpl))
 
 (defun ns/import (ns-from ns-to sym)
   "Import a symbol defined by one namespace into another."
@@ -123,15 +137,15 @@
             "Symbol `%s` is undefined or inaccessible from namespace `%s`"
             (ns/qualify ns-from sym) ns-to))
   ;; Add symbol to imports for NS-TO.
-  (let ((tbl (gethash ns-to ns/imports-table))
-        (val (ns/make-key ns-from sym)))
-    ;; Create table for NS-TO if it doesn't exist.
-    (unless tbl
-      (setq tbl (puthash ns-to (make-hash-table :test 'equal) ns/imports-table)))
-    ;; Insert `val` into the imports table for that namespace.
-    ;; Use `val` as both key and value for set semantics.
-    (puthash val val tbl)))
+  (let ((tpl (ns/make-key ns-from sym)))
+    (ns/puthash-in ns-to tpl tpl ns/imports-table)
+    tpl))
 
+(defun ns/import-all (from-ns into-ns)
+  "Import all public symbols from one namespace into another."
+  (mapcar (lambda (tpl)
+            (ns/import from-ns into-ns (cdr tpl)))
+          (hash-keys (gethash from-ns ns/exports-table))))
 
 
 
