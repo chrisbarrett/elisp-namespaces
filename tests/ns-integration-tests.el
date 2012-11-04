@@ -63,19 +63,11 @@
 
 ;;; Exported Vars
 
-(check "can access imported public var using unqualified symbol"
+(check "must use accessor function to access public var"
   (namespace foo :export [ public ])
-  (def public 'expected)
+  (def public 'fail)
   (namespace bar :import [ foo ] )
-  (should (equal 'expected (@ public))))
-
-
-(check "can access public var using qualified symbol"
-  (namespace foo :export [ public ])
-  (def public 'expected)
-  (namespace bar)
-  (should (equal 'expected (@ foo/public))))
-
+  (should-error (eval `(@ foo/public))))
 
 (check "cannot set public var from another namespace"
   (namespace foo :export [ public ])

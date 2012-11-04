@@ -77,8 +77,9 @@
 ;;; @dynamic
 
 (check "@dynamic delegates to @"
-  (with-var x 'expected
-    (should (equal 'expected (@dynamic 'x)))))
+  (@using foo
+     (with-var foo/x 'expected
+       (should (equal 'expected (@dynamic 'x))))))
 
 ;;; @set
 

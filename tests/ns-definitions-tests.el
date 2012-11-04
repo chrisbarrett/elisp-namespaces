@@ -8,8 +8,9 @@
 ;;; def
 
 (check "can define and read var created with def"
-  (def var 'expected)
-  (should (equal 'expected (@ var))))
+  (@using foo
+   (def var 'expected)
+   (should (equal 'expected (@ var)))))
 
 (check "should get error when setting a var created with def"
   (def var nil)
@@ -24,8 +25,9 @@
 ;;; defmutable
 
 (check "can define and read var created with defmutable"
-  (defmutable var 'expected)
-  (should (equal 'expected (@ var))))
+  (@using foo
+    (defmutable var 'expected)
+    (should (equal 'expected (@ var)))))
 
 (check "can set namespaced var created with defmutable"
   (@using foo

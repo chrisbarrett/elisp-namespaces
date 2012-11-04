@@ -96,10 +96,16 @@ Returns the hash and name of the sym if if it succeeds, else nil"
 (defmacro @ (symbol)
   "Evaluate SYMBOL as a var in the current namespace context."
   (assert (symbolp symbol))
-  (let ((hash (car-safe (ns/resolve symbol))))
+  (let* ((tpl  (ns/resolve symbol))
+         (hash (car-safe tpl))
+         (sym  (cdr-safe tpl))
+         (ns   (when sym (car (ns/split-sym sym)))))
     (assert hash ()
             "Symbol `%s` is undefined or inaccessible from namespace `%s`."
             symbol ns/current-ns)
+    (assert (equal ns ns/current-ns) ()
+            "Invalid use of `@`. `%s` is in another namespace.
+Call that symbol's accessor function instead." sym)
     hash))
 
 
