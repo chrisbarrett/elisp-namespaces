@@ -1,4 +1,4 @@
-;; NAMESPACES
+;; NS-CORE
 ;;
 ;; Copyright (c) 2012, Chris Barrett
 ;; All rights reserved.
@@ -25,33 +25,36 @@
 ;;
 ;;
 ;; DESCRIPTION:
-;; A straight-forward implementation of namespaces for Emacs LISP.
-;;
-;; Helps you keep the global namespace clean and protect your functions from
-;; unexpected clobbering.
-;;
-;; Requires Emacs 24 or later.
-;;
-;;
-;; INSTALLATION:
-;; Put this file with the `src` directory in your load path, then:
-;;
-;;  (require 'namespaces)
+;; Core namespace functions.
 ;;
 
-(defvar *ns-base-path* (concat user-emacs-directory "elisp/")
-  "Defines the base directory for namespace resolution.")
+(namespace ns
+  :use [ ns-operators
+         ns-definitions ])
 
+(provide 'ns-font-lock)
 
-;;; -------------------------- Load Subfeatures --------------------------------
+(def match-kw
+     (rx "(" (group
+              (or (and "def" (* (any graphic)))
+                  "namespace" "@using" "@lambda"))))
 
-(require 'ns-core        "src/ns-core.el")
-(require 'ns-operators   "src/ns-operators.el")
-(require 'ns-definitions "src/ns-definitions.el")
-(require 'ns-namespace   "src/ns-namespace.el")
-(require 'ns-font-lock   "src/ns-font-lock.el")
+(defn match-identifier-after (&rest strings)
+  (rx-to-string `(and "("
+                      (or ,@strings) (+ space)
+                      (group (+ (not (any space "()[]")))))))
 
-;;; ----------------------------------------------------------------------------
+(def match-op    (rx "(" (group (or "@" "@dynamic" "@call" "@sym" "@set")) space))
+(def match-fname (@call match-identifier-after "defn"))
+(def match-var   (@call match-identifier-after "def" "defmutable"))
+(def match-ns    (@call match-identifier-after "namespace" "@using"))
 
-(namespace user)
-(provide 'namespaces)
+(add-hook 'emacs-lisp-mode-hook
+          (@lambda ()
+            (font-lock-add-keywords
+             nil
+             `((,(@ match-kw)    1 font-lock-keyword-face)
+               (,(@ match-op)    1 font-lock-keyword-face)
+               (,(@ match-fname) 1 font-lock-function-name-face)
+               (,(@ match-var)   1 font-lock-variable-name-face)
+               (,(@ match-ns)    1 font-lock-constant-face)))))
