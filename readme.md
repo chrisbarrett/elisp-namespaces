@@ -86,7 +86,7 @@ You can change the value of a mutable var using `@set`.
 (@set captain "Picard")
 ```
 
-Symbols defined with `defn`, `def` and `defmutable` are private unless you explicitly export them.
+Symbols defined with `defn`, `def` and `defmutable` are private unless you explicitly export them. Vars defined with `defmutable` cannot be changed with `@set` outside the Defining namespace.
 
 ### Exporting and Importing Namespaced Symbols
 
@@ -94,13 +94,14 @@ To make a namespaced symbol publicly-accessible, add it to the exports list for 
 ```lisp
 (namespace enterprise :export [ captain ])
 ```
-Other namespaces can now access that symbol using direct qualification, or by adding it to their namespace imports.
+This makes `enterprise/captain` a public var, and generates an accessor method.
+Other namespaces can now access that symbol by invoking the accessor, or by adding it to their namespace imports and using `@`..
 ```lisp
 (namespace j25)
-(@ enterprise/captain)                   ; => "Picard"
+(enterprise/captain)                   ; => "Picard"
 
 (namespace borg :import [ enterprise ])
-(@ captain)                              ; => "Picard"
+(@ captain)                            ; => "Picard"
 ```
 
 ## De Res Macronis Nomenspationem
@@ -191,10 +192,35 @@ This can be useful if you juggle OSes, terminals and window-systems.
 
 ## Emacs Interop
 
-The `defn`, `def` and `defmutable` macros obfuscate their true symbols to prevent callers
-from casually accessing private members of a namespace. You can obtain a
-symbol's underlying name using the `@sym` macro. This is allows you to
-interoperate with foreign elisp. For example:
+Clients of your namespaced code do not need to know anything about namespaces or the `@` macros.
+
+The `namespace` macro declares the given namespace and an Emacs feature, as if you called `(provide 'foo)`.
+Clients can use the standard `require` and `autoload` mechanisms to access your packages.
+
+Exported functions can be called using their fully qualified name:
+```lisp
+(namespace foo :export [greet])
+(defn greet () "Hello!")
+
+(namespace bar)
+(foo/greet)      ; => "Hello!"
+```
+
+Similarly, exported vars can be read using auto-generated accessor functions:
+```lisp
+(namespace foo :export [greet])
+(defn greet () "Hello!")
+
+(namespace bar)
+(foo/greet)      ; => "Hello!"
+```
+
+By design, clients cannot modify exported vars with `@set`, even if they are defined with `defmutable`.
+Package writers should use `defcustom` when they want to define a var that can be customized by clients.
+
+The `defn`, `def` and `defmutable` macros obfuscate their true symbols to prevent callers from casually
+accessing private members of a namespace. You can obtain a symbol's underlying name using the `@sym` macro.
+This is allows your private members to interoperate with foreign elisp. For example:
 ```lisp
 (defn private () (message "TOP SECRET"))
 
@@ -219,25 +245,8 @@ namespace in your hooks or exported functions:
 
 ## Gotchas
 
-Due to internal name-mangling, you won't be able to use eldoc or `describe-function` on symbols defined
-by `defn`, `def` and `defmutable`.
+Due to internal name-mangling, you won't be able to use features like eldoc or `describe-function` on symbols defined
+by `defn`, `def` and `defmutable`. However, their fully-qualified exported forms work fine.
 
 The name mangling also introduces some calling indirection that makes debugging more complicated.
 If you need to do extended debugging, consider temporarily redefining your functions using `defun`.
-
-## TODO:
-
-- Generate standard elisp functions and vars for exported symbols.
-  This will let callers use exported symbols without knowing anything about the namespace machinery, eg:
-
-  ```lisp
-  (namespace foo :export [ hello ])
-
-  (defn hello () "Hello!")
-
-  ; Elsewhere, in client code...
-
-  (foo/hello)        ; #=> "Hello!"
-  ```
-
-- Make `defmutable` vars publicly immutable unless exported with a `:mutable` keyword flag.
