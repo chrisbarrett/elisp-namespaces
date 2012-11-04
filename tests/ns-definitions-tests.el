@@ -15,6 +15,11 @@
   (def var nil)
   (should-error (eval `(@set var 'fail))))
 
+(check "def creates accessor function for public vars"
+  (@using foo
+    (ns/export 'foo 'x)
+    (def x 'expected)
+    (should (equal 'expected (foo/x)))))
 
 ;;; defmutable
 
@@ -27,6 +32,11 @@
   (@set var 'expected)
   (should (equal 'expected (@ var))))
 
+(check "defmutable creates accessor function for public vars"
+  (@using foo
+    (ns/export 'foo 'x)
+    (defmutable x 'expected)
+    (should (equal 'expected (foo/x)))))
 
 ;;; Redefinitions
 
