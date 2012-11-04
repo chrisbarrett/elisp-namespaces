@@ -132,21 +132,22 @@ Returns the hash and name of the sym if if it succeeds, else nil"
   (let* ((tpl  (ns/resolve symbol))
          (hash (car-safe tpl))
          (name (cdr-safe tpl)))
-    (cond
-     (tpl
-      (let* ((tpl  (ns/split-sym name))
-             (ns   (car-safe tpl))
-             (sym  (cdr-safe tpl))
-             (meta (ns/get-symbol-meta ns sym))
-             )
-        (assert (ns-meta-mutable? meta) ()
-                "Invalid use of `@set`. `%s` is immutable." symbol)
-        `(setq ,hash ,value)))
+    (if tpl
+        (let* ((tpl  (ns/split-sym name))
+               (ns   (car-safe tpl))
+               (sym  (cdr-safe tpl))
+               (meta (ns/get-symbol-meta ns sym))
+               )
+          (assert (ns-meta-mutable? meta) ()
+                  "Invalid use of `@set`. `%s` is immutable." name)
+          (assert (equal ns ns/current-ns) ()
+                  "Invalid use of `@set`. `%s` is in another namespace.
+Package authors should use DEFCUSTOM for publicly mutable vars." name)
+          `(setq ,hash ,value))
 
-     ;; Could not resolve SYMBOL.
-     (t (error "Variable `%s` is undefined or inaccessible from namespace `%s`."
-               symbol ns/current-ns)))))
-
+      ;; Could not resolve SYMBOL.
+      (error "Variable `%s` is undefined or inaccessible from namespace `%s`."
+             symbol ns/current-ns))))
 
 (defmacro @lambda (args &rest body)
   "A lambda function that captures the surrounding namespace environment."
