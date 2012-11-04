@@ -36,27 +36,10 @@
 (eval-when-compile (require 'cl))
 (setq lexical-binding t)
 
-
+;;; Ensure defns below define within ns.
 (^using ns
 
-  (defmacro* ^namespace (name &key import export use packages)
-    (declare (indent 1))
-    (^using ns
-      ;; Export the given symbols.
-      (mapc (lambda (x) (ns/export name x))
-            export)
-      ;; Import the given symbols from other namespaces.
-      (mapc (^call destructure-dep (lambda (x xs) (^call handle-import x name xs)))
-            import)
-      ;; download and load packages.
-      (mapc (^call destructure-dep (lambda (x xs) (^call handle-pkg x xs)))
-            packages)
-      ;; Load emacs features and files.
-      (mapc (^call destructure-dep (lambda (x xs) (^call handle-use *ns-base-path* x xs)))
-            use))
-    ;; Rebind the current namespace.
-    (setq ns/current-ns name)
-    `',name)
+;;; -------------------------- Auxiliary Functions -----------------------------
 
   (^defn delete-nth (nth xs &key (count 1))
     (delete-if (lambda (x) t) xs :start nth :count count))
@@ -136,6 +119,30 @@
     (if autoloads
         (loop for dep in autoloads collect (^call autoload-dep pkg dep))
       (require pkg)))
+
+
+;;; -------------------------- Namespace Macro ---------------------------------
+
+  (defmacro* @namespace (name &key import export use packages)
+    (declare (indent 1))
+    (^using ns
+      ;; Export the given symbols.
+      (mapc (lambda (x) (ns/export name x))
+            export)
+      ;; Import the given symbols from other namespaces.
+      (mapc (^call destructure-dep (lambda (x xs) (^call handle-import x name xs)))
+            import)
+      ;; download and load packages.
+      (mapc (^call destructure-dep (lambda (x xs) (^call handle-pkg x xs)))
+            packages)
+      ;; Load emacs features and files.
+      (mapc (^call destructure-dep (lambda (x xs) (^call handle-use *ns-base-path* x xs)))
+            use))
+    ;; Rebind the current namespace.
+    (setq ns/current-ns name)
+    `',name)
+
+
   )
 
 

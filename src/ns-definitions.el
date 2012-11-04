@@ -91,7 +91,6 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
          ',qual))))
 
 
-
 ;; Local Variables:
 ;; byte-compile-warnings: (not cl-functions)
 ;; End:

@@ -2,38 +2,35 @@
 (require 'ns-namespace)
 (require 'ert)
 
-;;; ^namespace
+;;; @namespace
 
-(check "^namespace declaration should update current namespace"
-  (^namespace foo)
+(check "@namespace declaration should update current namespace"
+  (@namespace foo)
   (should (equal 'foo ns/current-ns)))
 
 
 ;;; Exported Functions
 
 (check "can call imported public fn using unqualified symbol"
-  (^namespace foo :export [ public ])
-  (defn public () 'expected)
-  (^namespace bar :import [ foo ])
+  (@namespace foo :export [ public ])
+  (^defn public () 'expected)
+  (@namespace bar :import [ foo ])
   (should (equal 'expected (^call public))))
 
 
-(check "can call public fn using qualified symbol"
-  (^namespace foo :export [ public ])
-  (defn public () 'expected)
-  (^namespace bar)
+(check "can call exported fn using qualified symbol"
+  (@namespace foo :export [ public ])
+  (^defn public () 'expected)
+  (^call foo/public )
+  (@namespace bar)
   (should (equal 'expected (^call foo/public))))
 
 
-(check "can call public fn without ^call using qualified symbol"
-  (let* ((ns    (gensym))
-         (fname (intern (concat (symbol-name ns) "/" "public")))
-        )
-    (eval `(^namespace ,ns :export [ public ]))
-
-    (defn public () 'expected)
-    (^namespace bar)
-    (should (equal 'expected (funcall fname)))))
+(check "can call exported fn without ^call using qualified symbol"
+  (@namespace foo :export [ public ])
+  (^defn public () 'expected)
+  (@namespace bar)
+  (should (equal 'expected (foo/public))))
 
 
 ;;; Dependency Loading
@@ -41,7 +38,7 @@
 (check "can require elisp features"
   (let ((feature (gensym)))
     (provide feature)
-    (eval `(^namespace foo :use [ ,feature ]))
+    (eval `(@namespace foo :use [ ,feature ]))
     (should (member feature features))))
 
 
@@ -51,7 +48,7 @@
            (file-exists-p (x) t)
            (load          (f) (setq result f))
            )
-      (^namespace foo :use [ x.y.z ])
+      (@namespace foo :use [ x.y.z ])
       (should (string-match-p (concat *ns-base-path* "x/y/z.el$") result)))))
 
 
@@ -61,7 +58,7 @@
            (package-install (x) (setq loaded x))
            )
       (provide pkg)
-      (eval `(^namespace foo :packages [ ,pkg ]))
+      (eval `(@namespace foo :packages [ ,pkg ]))
       (should (eq loaded pkg)))))
 
 
@@ -69,7 +66,7 @@
   (flet   ((package-install (x)))
     (let  ((pkg (gensym)))
       (provide pkg)
-      (eval `(^namespace foo :packages [ ,pkg ]))
+      (eval `(@namespace foo :packages [ ,pkg ]))
       (should (member pkg features)))))
 
 
@@ -83,7 +80,7 @@
              (setq result `[,fn ,file ,interactive ,type]))
            )
       (provide feature)
-      (eval `(^namespace foo :use [ (,feature (x :interactive t :type boolean)) ]))
+      (eval `(@namespace foo :use [ (,feature (x :interactive t :type boolean)) ]))
       (should (equal result `[x ,(symbol-name feature) t boolean])))))
 
 
@@ -97,7 +94,7 @@
              (setq result `[,fn ,file ,interactive ,type]))
            )
       (provide pkg)
-      (eval `(^namespace foo :packages [ (,pkg (x :interactive t :type boolean))]))
+      (eval `(@namespace foo :packages [ (,pkg (x :interactive t :type boolean))]))
       (should (equal result `[x ,(symbol-name pkg) t boolean])))))
 
 
@@ -106,35 +103,35 @@
 (check "loads a dependency when `when` evaluates to true"
   (let ((feature (gensym)))
     (provide feature)
-    (eval `(^namespace foo :use [ (,feature :when (eq t t)) ]))
+    (eval `(@namespace foo :use [ (,feature :when (eq t t)) ]))
     (should (member feature features))))
 
 
 (check "loads a dependency when `unless` evaluates to nil"
   (let ((feature (gensym)))
     (provide feature)
-    (eval `(^namespace foo :use [ (,feature :unless (eq t nil)) ]))
+    (eval `(@namespace foo :use [ (,feature :unless (eq t nil)) ]))
     (should (member feature features))))
 
 
 (check "loads a dependency when `when` is t and `unless` is nil"
   (let ((feature (gensym)))
     (provide feature)
-    (eval `(^namespace foo :use [ (,feature :when t :unless nil) ]))
+    (eval `(@namespace foo :use [ (,feature :when t :unless nil) ]))
     (should (member feature features))))
 
 
 (check "does not load a dependency when `when` evaluates to nil"
-  (^namespace foo :use [ (undefined :when (eq t nil)) ]))
+  (@namespace foo :use [ (undefined :when (eq t nil)) ]))
 
 (check "does not load a dependency when `unless` evaluates to true"
-  (^namespace foo :use [ (undefined :unless (eq t t)) ]))
+  (@namespace foo :use [ (undefined :unless (eq t t)) ]))
 
 (check "does not load a dependency when `when` is nil and `unless` is nil"
-  (^namespace foo :use [ (undefined :when nil :unless nil) ]))
+  (@namespace foo :use [ (undefined :when nil :unless nil) ]))
 
 (check "does not load a dependency when `when` is t and `unless` is t"
-  (^namespace foo :use [ (undefined :when t :unless t) ]))
+  (@namespace foo :use [ (undefined :when t :unless t) ]))
 
 
 ;; Local Variables:
