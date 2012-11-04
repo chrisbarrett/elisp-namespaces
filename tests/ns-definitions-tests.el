@@ -69,7 +69,12 @@
   (defn sqr (i) (* i i))
   (should (equal 9 (@call sqr 3))))
 
-
+(check "defn falls back to defun for command declarations"
+  (@using foo
+    (let* ((name (gensym))
+           (hash (car (ns/make-key 'foo name))))
+      (eval `(defn ,name () (interactive) 'expected))
+      (should (commandp hash)))))
 
 
 ;; Local Variables:
