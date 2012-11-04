@@ -65,30 +65,35 @@
   "Define a namespace-qualified function.
 If BODY contains a call to (interactive), this will expand to `defun`. Otherwise, `defun*` is used."
   (declare (indent defun))
+  (let* (
+         (tpl   (ns/intern ns/current-ns name))
+         (hash  (car tpl))
+         (qual  (cdr tpl))
+         (body  body)
+         (doc   docstring)
+         ;; Tolerate body forms in the `docstring` position.
+         (forms (cond
+                 ((and (stringp doc) body) (list* doc nil body))
+                 (body (list* nil doc body))
+                 (t (list nil doc))))
+         ;; Extract parts.
+         (docstring    (or (first forms) ""))
+         (interactive? (lambda (s) (equalp (car-safe s) 'interactive)))
+         (interactive  (find-if interactive? forms))
+         (body         (remove-if interactive? (rest forms)))
+         (defun-form   (if interactive 'defun 'defun*))
+         (export?      (ns-meta-public? (ns/get-symbol-meta ns/current-ns qual)))
+         )
+    `(progn
+       (,defun-form ,hash ,arglist
+         ,docstring
+         ,interactive
+         (@using ,ns/current-ns ,@body))
 
-  (flet   ((interactive-p (s) (equalp (car-safe s) 'interactive)))
-    (let* ((tpl   (ns/intern ns/current-ns name))
-           (hash  (car tpl))
-           (qual  (cdr tpl))
-           (body  body)
-           (doc   docstring)
-           ;; Tolerate body forms in the `docstring` position.
-           (forms (cond
-                   ((and (stringp doc) body) (list* doc nil body))
-                   (body (list* nil doc body))
-                   (t (list nil doc))))
-           ;; Extract parts.
-           (docstring   (or (first forms) ""))
-           (interactive (find-if #'interactive-p forms))
-           (body        (remove-if #'interactive-p (rest forms)))
-           (defun-form  (if interactive 'defun 'defun*))
-           )
-      `(progn
-         (,defun-form ,hash ,arglist
-           ,docstring
-           ,interactive
-           (@using ,ns/current-ns ,@body))
-         ',qual))))
+       ,(when export?
+          `(defalias ',qual ',hash))
+
+       ',qual)))
 
 
 ;; Local Variables:

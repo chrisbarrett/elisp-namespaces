@@ -146,8 +146,8 @@
   (let ((tbl (gethash from-ns ns/exports-table)))
     (when tbl
       (mapcar (lambda (tpl)
-		(ns/import from-ns into-ns (cdr tpl)))
-	      (hash-keys tbl)))))
+                (ns/import from-ns into-ns (cdr tpl)))
+              (hash-keys tbl)))))
 
 
 
