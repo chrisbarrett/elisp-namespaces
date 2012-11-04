@@ -121,7 +121,41 @@
 ;;; -------------------------- Namespace Macro ---------------------------------
 
 (defmacro* namespace (name &key import export use packages)
+  "Define or reopen an existing namespace.
+The keyword agruments allow you to define exports, imports and dependencies on Emacs features and online packages.
+
+NAME should be a symbol used to identify the namespace and qualify its members.
+
+OPTIONAL KEYWORD ARGUMENTS
+--------------------------
+
+IMPORT is a vector of the form [ dep ... ], where each `dep` is either:
+  1. a namespace whose members will be all be imported
+  2. a list of the form (ns & syms ... ), where `ns` is a namespace identifier and each sym is a member to import.
+
+EXPORT is a vector of the form [ sym ... ], where each `sym` is a symbol to make publicly accessible.
+
+PACKAGES is a vector of the form [ dep ... ], where each `dep` is either:
+  1. a package to be downloaded and loaded
+  2. a list of the form (pkg & load ... ), where `pkg` is the package name and each `load` is a LOAD FORM as described later.
+
+USE is a vector of the form [ dep ... ], where each `dep` is either:
+  1. an elisp file or namespace to load, where periods are taken as path delimeters
+  2. an emacs feature to require
+  3. a list of the form (feature & load ... ) where `feature` is an Emacs feature and each `load` is a LOAD FORM, described below.
+
+LOAD FORMS
+----------
+A LOAD FORM represents an item that will be autoloaded. It is either
+  1. a symbol
+  2. a list of the form (sym &key interactive type docstring) that will be passed to the Emacs autoload function. See the documentation for AUTOLOAD for an explanation of these symbols.
+"
   (declare (indent 1))
+  (assert (symbolp name))
+  (assert (not (string-match-p "/" (symbol-name name))) ()
+          "Invalid namespace identifier: `%s`
+Forward-slashes (`/`) cannot be used." name)
+  (provide name)
   (@using ns
     ;; Export the given symbols.
     (mapc (lambda (x) (ns/export name x))
@@ -138,7 +172,6 @@
   ;; Rebind the current namespace.
   (setq ns/current-ns name)
   `',name)
-
 
 
 ;; Local Variables:

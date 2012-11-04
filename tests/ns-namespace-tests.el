@@ -2,11 +2,19 @@
 (require 'ns-namespace)
 (require 'ert)
 
-;;; @namespace
+;;; namespace
 
-(check "@namespace declaration should update current namespace"
+(check "namespace declaration should update current namespace"
   (namespace foo)
   (should (equal 'foo ns/current-ns)))
+
+(check "namespace declaration should provide an emacs feature"
+  (let ((ns (gensym)))
+    (eval
+     `(progn
+        (namespace ,ns)
+        (should (require ',ns))))))
+
 
 
 ;;; Exported Functions
