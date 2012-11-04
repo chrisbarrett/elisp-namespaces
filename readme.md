@@ -53,6 +53,10 @@ Put namespaces.el in your loadpath, then require it in your init.el:
    (setq *ns-base-path* "~/.emacs.d/lisp/")
    ```
 
+## Sample Code
+
+You can see an example of this package in action in my init.el, available [here](https://github.com/chrisbarrett/.emacs.d/blob/master/init.el).
+
 ## Basic Usage
 
 ### Defining Namespaces and Members
@@ -86,7 +90,7 @@ You can change the value of a mutable var using `@set`.
 (@set captain "Picard")
 ```
 
-Symbols defined with `defn`, `def` and `defmutable` are private unless you explicitly export them. Vars defined with `defmutable` cannot be changed with `@set` outside the Defining namespace.
+Symbols defined with `defn`, `def` and `defmutable` are private unless you explicitly export them. Vars defined with `defmutable` cannot be changed with `@set` outside the defining namespace.
 
 ### Exporting and Importing Namespaced Symbols
 
@@ -95,13 +99,66 @@ To make a namespaced symbol publicly-accessible, add it to the exports list for 
 (namespace enterprise :export [ captain ])
 ```
 This makes `enterprise/captain` a public var, and generates an accessor method.
-Other namespaces can now access that symbol by invoking the accessor, or by adding it to their namespace imports and using `@`..
+Other namespaces can now access that symbol by invoking the accessor, or by adding it to their namespace imports and using `@`:
 ```lisp
 (namespace j25)
 (enterprise/captain)                   ; => "Picard"
 
 (namespace borg :import [ enterprise ])
 (@ captain)                            ; => "Picard"
+```
+
+## Emacs Interop
+
+Clients of your namespaced code do not need to know anything about namespaces or the `@` macros.
+
+The `namespace` macro declares the given namespace as an Emacs feature, as if you called `(provide 'foo)`.
+Clients can use the standard `require` and `autoload` mechanisms to access your exported functions.
+
+Exported functions can be called using their fully qualified name:
+```lisp
+(namespace foo :export [greet])
+(defn greet () "Hello!")
+
+(namespace bar)
+(foo/greet)      ; => "Hello!"
+```
+
+Similarly, exported vars can be read using auto-generated accessor functions:
+```lisp
+(namespace foo :export [greet])
+(defn greet () "Hello!")
+
+(namespace bar)
+(foo/greet)      ; => "Hello!"
+```
+
+By design, clients cannot modify exported vars with `@set`, even if they are defined with `defmutable`.
+Package writers should use `defcustom` when they want to define a var that can be customized by clients.
+
+The `defn`, `def` and `defmutable` macros obfuscate their true symbols to prevent callers from casually
+accessing private members of a namespace. You can obtain a symbol's underlying name using the `@sym` macro.
+This is allows your private members to interoperate with foreign elisp. For example:
+```lisp
+(defn private () (message "TOP SECRET"))
+
+(defvar example-hook)
+(add-hook 'example-hook (@sym private))
+
+(run-hooks 'example-hook)                 ; check your *Messages* buffer
+```
+
+You can also use the `@lambda` macro when you want to capture the declaring
+namespace in your hooks or exported functions:
+```lisp
+(namespace foo :export [ x ])
+
+;; Define a public var with a closure that captures a private var.
+(def x (@lambda () (@ private)))
+(def private 'foo-private)
+
+(namespace bar :import [ foo ])
+(funcall (@ x))                           ; => foo-private
 ```
 
 ## De Res Macronis Nomenspationem
@@ -183,64 +240,11 @@ See the Emacs documentation for `autoload` for more info.
 
 ### Conditional Loading
 
-The above forms take optional :when or :unless keyword arguments to specify loading conditions.
-This can be useful if you juggle OSes, terminals and window-systems.
+The above forms take optional `:when` or `:unless` keyword arguments to specify loading conditions.
+This can be useful in your configuration if you juggle OSes or terminals and window-systems.
 ```lisp
 (namespace foo
   :use [ (color-theme :when window-system) ])
-```
-
-## Emacs Interop
-
-Clients of your namespaced code do not need to know anything about namespaces or the `@` macros.
-
-The `namespace` macro declares the given namespace and an Emacs feature, as if you called `(provide 'foo)`.
-Clients can use the standard `require` and `autoload` mechanisms to access your packages.
-
-Exported functions can be called using their fully qualified name:
-```lisp
-(namespace foo :export [greet])
-(defn greet () "Hello!")
-
-(namespace bar)
-(foo/greet)      ; => "Hello!"
-```
-
-Similarly, exported vars can be read using auto-generated accessor functions:
-```lisp
-(namespace foo :export [greet])
-(defn greet () "Hello!")
-
-(namespace bar)
-(foo/greet)      ; => "Hello!"
-```
-
-By design, clients cannot modify exported vars with `@set`, even if they are defined with `defmutable`.
-Package writers should use `defcustom` when they want to define a var that can be customized by clients.
-
-The `defn`, `def` and `defmutable` macros obfuscate their true symbols to prevent callers from casually
-accessing private members of a namespace. You can obtain a symbol's underlying name using the `@sym` macro.
-This is allows your private members to interoperate with foreign elisp. For example:
-```lisp
-(defn private () (message "TOP SECRET"))
-
-(defvar example-hook)
-(add-hook 'example-hook (@sym private))
-
-(run-hooks 'example-hook)                 ; check your *Messages* buffer
-```
-
-You can also use the `@lambda` macro when you want to capture the declaring
-namespace in your hooks or exported functions:
-```lisp
-(namespace foo :export [ x ])
-
-;; Define a public var with a closure that captures a private var.
-(def x (@lambda () (@ private)))
-(def private 'foo-private)
-
-(namespace bar :import [ foo ])
-(funcall (@ x))                           ; => foo-private
 ```
 
 ## Gotchas
