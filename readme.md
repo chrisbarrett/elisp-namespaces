@@ -134,7 +134,7 @@ To make a namespaced symbol publicly-accessible, add it to the exports list for 
 ```
 This makes `enterprise/captain` a public var, and generates an accessor method.
 Other namespaces can now access that symbol by invoking the accessor, or by
-adding it to their namespace imports and using `@`:
+adding it to their namespace imports and using `@call`:
 ```lisp
 (namespace j25)
 (enterprise/captain)                   ; => "Picard"
