@@ -53,8 +53,6 @@ Elisp doesn't have reader macros, so there's not as much sugar as I'd like. You'
 (namespace interrogator)
 (007/cover)               ; => "David Somerset"
 (007/realname)            ; => Error: Inaccessible
-
-"
 ```
 
 You can see an example of this package in action in my init.el, available [here](https://github.com/chrisbarrett/.emacs.d/blob/master/init.el).
@@ -141,6 +139,8 @@ Other namespaces can now access that symbol by invoking the accessor, or by addi
 (namespace borg :import [ enterprise ])
 (@ captain)                            ; => "Picard"
 ```
+These accessor functions add a nice layer of safety: if your requirements change down the track (eg, you need logging),
+you can safely reimplement an acccessor by hand without changing the interface and breaking client code.
 
 ## Emacs Interop
 
