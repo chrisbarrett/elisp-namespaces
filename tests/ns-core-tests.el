@@ -93,6 +93,8 @@
   (ns/import-all 'foo 'bar)
   (should (equal 2 (hash-table-count (gethash 'bar ns/imports-table)))))
 
+
+
 ;; Local Variables:
 ;; no-byte-compile: t
 ;; End:
