@@ -21,6 +21,44 @@ any name I choose could get clobbered at runtime. And prefixing everything by ha
 This `namespace` package provides that basic level of encapsulation using a couple of simple macros, as well as conveniences to make setting up dependencies a snap.
 Elisp doesn't have reader macros, so there's not as much sugar as I'd like. You'll learn to love the `@` symbol!
 
+## Sample Code
+
+```lisp
+(namespace 007
+  ;; Members are private, unless explicitly exported.
+  :export
+  [ cover ]
+  :import
+  [ specialist-knowledge ]
+  ;; Download packages automatically from elpa.
+  :packages
+  [ geography
+    gnus-MI6-utils ]
+  ;; Use Emacs features and load elisp files from disk.
+  :use
+  [ agency.passports
+    (agency.contacts.russian :when (equal (agent-location) 'Moscow)) ])
+
+;; Private immutable var.
+(def realname "Bond, James Bond.")
+
+;; Public, mutable var.
+(defmutable cover "David Somerset")
+
+;; Private function, calling another private function.
+(defn spy ()
+   (@call do-spy-stuff))
+
+
+(namespace interrogator)
+(007/cover)               ; => "David Somerset"
+(007/realname)            ; => Error: Inaccessible
+
+"
+```
+
+You can see an example of this package in action in my init.el, available [here](https://github.com/chrisbarrett/.emacs.d/blob/master/init.el).
+
 ## Installation
 
 Put namespaces.el in your loadpath, then require it in your init.el:
@@ -52,10 +90,6 @@ Put namespaces.el in your loadpath, then require it in your init.el:
    ```lisp
    (setq *ns-base-path* "~/.emacs.d/lisp/")
    ```
-
-## Sample Code
-
-You can see an example of this package in action in my init.el, available [here](https://github.com/chrisbarrett/.emacs.d/blob/master/init.el).
 
 ## Basic Usage
 
