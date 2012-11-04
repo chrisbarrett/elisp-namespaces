@@ -1,25 +1,11 @@
 # Elisp Namespaces
 
-![Namespaces in Elisp Screenshot](http://cloud.github.com/downloads/chrisbarrett/elisp-namespaces/namespaces-screenshot.png)
-
-A straight-forward implementation of namespaces for Emacs LISP.
+An implementation of namespaces for Emacs LISP, with an emphasis on immutabilty.
 Helps you keep the global namespace clean and protect your symbols from clobbering.
 
 Pull requests welcome.
 
 Requires Emacs 24 or later.
-
-### Why Does Emacs Need Namespaces?
-
-Elisp doesn't have namespaces, so package authors tend to use prefixes to separate their identifiers and avoid clobbering.
-For instance, if you have yasnippet installed you can run `M-x describe-function yas<TAB>` to see every function defined by that feature.
-This level of exposure makes it hard to distinguish the intended interface from volatile internal details.
-
-At a deeper level, a single global namespace makes elisp programming more annoying than it needs to be. I *agonize* over what to name my utility functions, because
-any name I choose could get clobbered at runtime. And prefixing everything by hand is so *manual*.
-
-This `namespace` package provides that basic level of encapsulation using a couple of simple macros, as well as conveniences to make setting up dependencies a snap.
-Elisp doesn't have reader macros, so there's not as much sugar as I'd like. You'll learn to love the `@` symbol!
 
 ## Sample Code
 
@@ -55,7 +41,22 @@ Elisp doesn't have reader macros, so there's not as much sugar as I'd like. You'
 (007/realname)            ; => Error: Inaccessible
 ```
 
-You can see an example of this package in action in my init.el, available [here](https://github.com/chrisbarrett/.emacs.d/blob/master/init.el).
+You can see an example of this package in action in my init.el,
+available [here](https://github.com/chrisbarrett/.emacs.d/blob/master/init.el).
+
+### Why Does Emacs Need Namespaces?
+
+Elisp doesn't have namespaces, so package authors tend to use prefixes to separate their
+identifiers and avoid clobbering. For instance, if you have yasnippet installed you can run
+`M-x describe-function yas<TAB>` to see every function defined by that feature. This level of exposure
+makes it hard to distinguish the intended interface from volatile internal details.
+
+At a deeper level, a single global namespace makes elisp programming more annoying than it needs to be.
+I *agonize* over what to name my utility functions, because any name I choose could get clobbered at runtime.
+And prefixing everything by hand is so *manual*.
+
+This `namespace` package provides that basic level of encapsulation using a couple of simple macros,
+as well as conveniences to make setting up dependencies a snap.
 
 ## Installation
 
@@ -122,7 +123,8 @@ You can change the value of a mutable var using `@set`.
 (@set captain "Picard")
 ```
 
-Symbols defined with `defn`, `def` and `defmutable` are private unless you explicitly export them. Vars defined with `defmutable` cannot be changed with `@set` outside the defining namespace.
+Symbols defined with `defn`, `def` and `defmutable` are private unless you explicitly export them.
+Vars defined with `defmutable` cannot be changed with `@set` outside the defining namespace.
 
 ### Exporting and Importing Namespaced Symbols
 
@@ -131,7 +133,8 @@ To make a namespaced symbol publicly-accessible, add it to the exports list for 
 (namespace enterprise :export [ captain ])
 ```
 This makes `enterprise/captain` a public var, and generates an accessor method.
-Other namespaces can now access that symbol by invoking the accessor, or by adding it to their namespace imports and using `@`:
+Other namespaces can now access that symbol by invoking the accessor, or by
+adding it to their namespace imports and using `@`:
 ```lisp
 (namespace j25)
 (enterprise/captain)                   ; => "Picard"
@@ -139,8 +142,9 @@ Other namespaces can now access that symbol by invoking the accessor, or by addi
 (namespace borg :import [ enterprise ])
 (@ captain)                            ; => "Picard"
 ```
-These accessor functions add a nice layer of safety: if your requirements change down the track (eg, you need logging),
-you can safely reimplement an acccessor by hand without changing the interface and breaking client code.
+These accessor functions add a nice layer of safety: if your requirements change down the
+track (eg, you need logging), you can safely reimplement an acccessor by hand without
+changing the interface and breaking client code.
 
 ## Emacs Interop
 
@@ -197,8 +201,8 @@ namespace in your hooks or exported functions:
 
 ## De Res Macronis Nomenspationem
 
-The `namespace` macro is a versatile beast. It is used to import and export namespace symbols, load emacs
-features and download elisp packages.
+The `namespace` macro is a versatile beast. It is used to import and export namespace symbols,
+load emacs features and download elisp packages.
 
 ### Keyword Arguments
 
@@ -267,7 +271,8 @@ In addition to loading elisp features, the `:packages` and `:use` arguments allo
  In this example:
    1. paredit is *required*, meaning it is eagerly loaded
    2. `nrepl-mode` is *autoloaded* from the nrepl package, meaning it will be lazily loaded
-   3. `clojure-mode` is also autoloaded, with a nested form allowing you to pass additional arguments to the underlying call to `autoload`.
+   3. `clojure-mode` is also autoloaded, with a nested form allowing you to pass additional
+      arguments to the underlying call to `autoload`.
 
 See the Emacs documentation for `autoload` for more info.
 
@@ -281,10 +286,12 @@ This can be useful in your configuration if you juggle OSes or terminals and win
   :use [ (color-theme :when window-system) ])
 ```
 
-## Gotchas
+## Gotchas and Limitations
 
 Due to internal name-mangling, you won't be able to use features like eldoc or `describe-function` on symbols defined
 by `defn`, `def` and `defmutable`. However, their fully-qualified exported forms work fine.
 
 The name mangling also introduces some calling indirection that makes debugging more complicated.
 If you need to do extended debugging, consider temporarily redefining your functions using `defun`.
+
+Elisp doesn't have reader macros, so there's not as much sugar as I'd like. You'll learn to love the `@` symbol!
