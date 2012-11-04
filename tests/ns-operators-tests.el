@@ -4,6 +4,11 @@
 (require 'cl)
 (require 'ert)
 
+;;; ----------------------------------------------------------------------------
+
+;;; Simple substitutes for `def` and `defn` to avoid taking a dependency on those
+;;; macros.
+
 (defmacro with-var (sym value &rest body)
   "Define a namespaced var within BODY forms."
   (declare (indent defun))
@@ -24,6 +29,8 @@
     `(flet ((,hash ,arglist ,body-form))
        ,@body)))
 
+;;; ----------------------------------------------------------------------------
+
 ;;; @sym
 
 (check "@sym returns the hash of the given qualified name"
@@ -35,6 +42,19 @@
   (let ((hash (car (ns/intern 'foo 'bar)))
         (ns/current-ns 'foo))
     (should (equal hash (@sym bar)))))
+
+(check "@sym uses imports when resolving unqualified symbols"
+  (let ((hash (car (ns/intern 'foo 'x)))
+        (ns/current-ns 'bar))
+    (ns/export 'foo 'x)
+    (ns/import 'foo 'bar 'x)
+    (should (equal hash (@sym x)))))
+
+(check "@sym resolves qualified public symbols"
+  (let ((hash (car (ns/intern 'foo 'x)))
+        (ns/current-ns 'bar))
+    (ns/export 'foo 'x)
+    (should (equal hash (@sym foo/x)))))
 
 (check "@sym signals an error when the given symbol is not publicly accessible"
   (let ((hash (car (ns/intern 'foo 'bar))))
@@ -60,6 +80,11 @@
   (@using foo
     (with-var x 'expected
       (should (equal 'expected (@ foo/x))))))
+
+(check "@ returns the value of the given unqualified sym from this namespace"
+  (@using foo
+    (with-var x 'expected
+      (should (equal 'expected (@ x))))))
 
 (check "@ signals an error when the given sym is not in this namespace (even when public)"
   (with-var foo/x 'fail

@@ -7,7 +7,7 @@
 (check "hash function returns different hashes for different inputs"
   (should-not (equal (ns/hash 'y) (ns/hash 'x))))
 
-(check "hash function same hash for identical inputs"
+(check "hash function returns same hash for identical inputs"
   (should (equal (ns/hash 'x) (ns/hash 'x))))
 
 ;;; Keygen
@@ -23,11 +23,11 @@
   (ns/intern 'foo 'bar)
   (should (= 1 (hash-table-count ns/symbols-table))))
 
-(check "intern returns the tuple with the hash used"
+(check "intern returns a tuple where the car is the symbol hash"
   (let ((hash (ns/hash 'foo/bar)))
     (should (equal hash (car (ns/intern 'foo 'bar))))))
 
-(check "intern returns the tuple with the name used"
+(check "intern returns a tuple where the cdr is the qualified name"
   (should (equal 'foo/bar (cdr (ns/intern 'foo 'bar)))))
 
 (check "interned symbols are not duplicated"
@@ -35,7 +35,7 @@
   (ns/intern 'foo 'bar)
   (should (= 1 (hash-table-count ns/symbols-table))))
 
-(check "interned symbol data is preserved across duplicated insertions"
+(check "metadata is preserved across duplicated insertions"
   (ns/intern 'foo 'bar)
   (setf (ns-meta-mutable? (ns/get-symbol-meta 'foo 'bar)) t)
   (ns/intern 'foo 'bar)
