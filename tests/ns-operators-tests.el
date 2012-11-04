@@ -36,7 +36,7 @@
         (ns/current-ns 'foo))
     (should (equal hash (@sym bar)))))
 
-(check "@sym signals an error when the given symbol is not public"
+(check "@sym signals an error when the given symbol is not publicly accessible"
   (let ((hash (car (ns/intern 'foo 'bar))))
     (should-error (eval '(@sym foo/bar)))))
 
@@ -61,11 +61,10 @@
     (with-var x 'expected
       (should (equal 'expected (@ foo/x))))))
 
-(check "@ returns values when given symbol is public"
-  (with-var foo/x 'expected
+(check "@ signals an error when the given sym is not in this namespace (even when public)"
+  (with-var foo/x 'fail
     (setf (ns-meta-public? (ns/get-symbol-meta 'foo 'x)) t)
-    (@using baz
-      (should (equal 'expected (@ foo/x))))))
+    (@using bar (should-error (eval '(@ foo/x))))))
 
 (check "@ signals error when given symbol is undefined"
   (should-error (eval '(@ foo))))
