@@ -7,6 +7,25 @@ Pull requests welcome.
 
 Requires Emacs 24 or later.
 
+## The Elevator Pitch
+
+#### Namespace members are private unless explicitly exported (*yuss!*)
+ - explicit exports make your package's public interface clear
+ - private symbols are obfuscated
+
+#### Declare dependencies on Elisp Features, online packages and random Elisp files in an easy and consistent way
+ - drastically streamlines your init.el
+ - centralised dependency declarations are easy to track
+
+#### Helps you do the Right Thing with variables
+ - immutability is the default
+ - automatically generates accessor functions for exported variables
+ - client code can't directly access exported variables
+
+#### It's all done with macros
+ - catches errors early
+ - no runtime penalty!
+
 ## Sample Code
 
 ```lisp
@@ -132,7 +151,7 @@ To make a namespaced symbol publicly-accessible, add it to the exports list for 
 ```lisp
 (namespace enterprise :export [ captain ])
 ```
-This makes `enterprise/captain` a public var, and generates an accessor method.
+This makes `enterprise/captain` a public var, and generates an accessor function.
 Other namespaces can now access that symbol by invoking the accessor, or by
 adding it to their namespace imports and using `@call`:
 ```lisp
@@ -164,11 +183,11 @@ Exported functions can be called using their fully qualified name:
 
 Similarly, exported vars can be read using auto-generated accessor functions:
 ```lisp
-(namespace foo :export [greet])
-(defn greet () "Hello!")
+(namespace foo :export [x])
+(def x 'hello)
 
 (namespace bar)
-(foo/greet)      ; => "Hello!"
+(foo/x)      ; => hello
 ```
 
 By design, clients cannot modify exported vars with `@set`, even if they are defined with `defmutable`.
