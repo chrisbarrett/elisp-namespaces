@@ -3,8 +3,14 @@
 (require 'ert)
 (require 'namespaces)
 (setq lexical-binding t)
-(add-to-list 'load-path (concat user-emacs-directory "elisp-namespaces/" "tests/"))
 
+;; Add `tests` dir to load path.
+(let* ((file (or load-file-name (buffer-file-name)))
+       (path (file-name-directory file))
+       )
+  (add-to-list 'load-path path))
+
+;;; ----------------------------------------------------------------------------
 
 (defun clear-hash (table)
   "Delete all entries in the given hashtable."
