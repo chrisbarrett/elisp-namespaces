@@ -46,9 +46,6 @@
 
 ;;; Code:
 
-(defvar *ns-base-path* (concat user-emacs-directory "elisp/")
-  "Defines the base directory for namespace resolution.")
-
 ;;;###autoload
 (progn
 
@@ -58,6 +55,10 @@
          (src (concat path "src/"))
          )
     (add-to-list 'load-path src))
+
+
+  (defvar *ns-base-path* (concat user-emacs-directory "elisp/")
+  "Defines the base directory for namespace resolution.")
 
   (require 'ns-core)
   (require 'ns-operators)
