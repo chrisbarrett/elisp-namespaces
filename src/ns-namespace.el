@@ -155,7 +155,6 @@ A LOAD FORM represents an item that will be autoloaded. It is either
   (assert (not (string-match-p "/" (symbol-name name))) ()
           "Invalid namespace identifier: `%s`
 Forward-slashes (`/`) cannot be used." name)
-  (provide name)
   (@using ns
     ;; Export the given symbols.
     (mapc (lambda (x) (ns/export name x))
@@ -171,7 +170,7 @@ Forward-slashes (`/`) cannot be used." name)
           use))
   ;; Rebind the current namespace.
   (setq ns/current-ns name)
-  `',name)
+  `(provide ',name))
 
 
 ;; Local Variables:
