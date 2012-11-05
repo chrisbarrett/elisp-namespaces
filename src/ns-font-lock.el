@@ -57,3 +57,6 @@
                (,(@ match-fname) 1 font-lock-function-name-face)
                (,(@ match-var)   1 font-lock-variable-name-face)
                (,(@ match-ns)    1 font-lock-constant-face)))))
+
+
+(provide 'ns-font-lock)
