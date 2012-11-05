@@ -1,4 +1,8 @@
-;; NAMESPACES
+;;; namespaces.el --- namespaces for Elisp
+;;
+;; Author: Chris Barrett
+;; URL: https://github.com/chrisbarrett/elisp-namespaces
+;; Version: 1.0.0
 ;;
 ;; Copyright (c) 2012, Chris Barrett
 ;; All rights reserved.
@@ -23,21 +27,8 @@
 ;; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;;
-;;
-;; DESCRIPTION:
-;; A straight-forward implementation of namespaces for Emacs LISP.
-;;
-;; Helps you keep the global namespace clean and protect your functions from
-;; unexpected clobbering.
-;;
-;; Requires Emacs 24 or later.
-;;
-;;
-;; INSTALLATION:
-;; Put this file with the `src` directory in your load path, then:
-;;
-;;  (require 'namespaces)
-;;
+
+(provide 'namespaces)
 
 (defvar *ns-base-path* (concat user-emacs-directory "elisp/")
   "Defines the base directory for namespace resolution.")
@@ -54,4 +45,5 @@
 ;;; ----------------------------------------------------------------------------
 
 (namespace user)
-(provide 'namespaces)
+
+;;; namespaces.el ends here
