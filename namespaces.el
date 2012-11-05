@@ -30,6 +30,20 @@
 ;; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+;;; Commentary:
+;;
+;;   (require 'namespaces)
+;;
+;;   (namespace foo :export [hello])
+;;   (defn hello () "Hello, world!")
+;;
+;;   (namespace bar)
+;;   (foo/hello)    ; # => "Hello, world!"
+;;
+;;
+;; See documentation at https://github.com/chrisbarrett/elisp-namespaces
+;;
+
 ;;; Code:
 
 (defvar *ns-base-path* (concat user-emacs-directory "elisp/")
