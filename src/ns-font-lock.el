@@ -1,4 +1,4 @@
-;; NS-CORE
+;; NS-FONT-LOCK
 ;;
 ;; Copyright (c) 2012, Chris Barrett
 ;; All rights reserved.
@@ -58,5 +58,3 @@
                (,(@ match-var)   1 font-lock-variable-name-face)
                (,(@ match-ns)    1 font-lock-constant-face)))))
 
-
-(provide 'ns-font-lock)
