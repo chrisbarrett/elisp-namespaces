@@ -52,15 +52,18 @@
 ;;;###autoload
 (progn
 
-;;; -------------------------- Load Subfeatures --------------------------------
+  ;; Add the `src` dir to load path.
+  (let* ((file (or load-file-name (buffer-file-name)))
+         (path (file-name-directory file))
+         (src (concat path "src/"))
+         )
+    (add-to-list 'load-path src))
 
-  (require 'ns-core        "src/ns-core.el")
-  (require 'ns-operators   "src/ns-operators.el")
-  (require 'ns-definitions "src/ns-definitions.el")
-  (require 'ns-namespace   "src/ns-namespace.el")
-  (require 'ns-font-lock   "src/ns-font-lock.el")
-
-;;; ----------------------------------------------------------------------------
+  (require 'ns-core)
+  (require 'ns-operators)
+  (require 'ns-definitions)
+  (require 'ns-namespace)
+  (require 'ns-font-lock)
 
   (namespace user))
 
