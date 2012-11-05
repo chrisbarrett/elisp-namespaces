@@ -10,54 +10,63 @@ Requires Emacs 24 or later.
 ## The Elevator Pitch
 
 #### Namespace members are private unless explicitly exported (*yuss!*)
- - explicit exports make your package's public interface clear
- - private symbols are obfuscated
+- explicit exports make your package's public interface clear
+- private symbols are obfuscated
 
 #### Declare dependencies on Elisp Features, online packages and random Elisp files in an easy and consistent way
- - drastically streamlines your init.el
- - centralised dependency declarations are easy to track
+- drastically streamlines your init.el
+- centralised dependency declarations are easy to track
 
 #### Helps you do the Right Thing with variables
- - immutability is the default
- - automatically generates accessor functions for exported variables
- - client code can't directly access exported variables
+- immutability is the default
+- automatically generates accessor functions for exported variables
+- client code can't directly access exported variables
 
 #### It's all done with macros
- - catches errors early
- - no runtime penalty!
+- catches errors early
+- no runtime penalty!
 
 ## Sample Code
 
 ```lisp
+;;; Define a new namespace.
+
 (namespace 007
   ;; Members are private, unless explicitly exported.
   :export
-  [ cover ]
+  [ cover greet ]
   :import
-  [ specialist-knowledge ]
-  ;; Download packages automatically from elpa.
+  [ spy-training ]
+  ;; Download packages automatically from elpa and load
+  ;; Elisp files and features.
   :packages
   [ geography
     gnus-MI6-utils ]
-  ;; Use Emacs features and load elisp files from disk.
   :use
   [ agency.passports
     (agency.contacts.russian :when (equal (agent-location) 'Moscow)) ])
 
-;; Private immutable var.
-(def realname "Bond, James Bond.")
+;;; Define some vars and functions in this namespace.
 
-;; Public, mutable var.
+(def realname "Bond, James Bond.")
 (defmutable cover "David Somerset")
 
-;; Private function, calling another private function.
-(defn spy ()
-   (@call do-spy-stuff))
+(defn identify ()
+   (concat "Hello, I'm " cover "."))
+
+(defn update-cover ()
+   "Update identity if cover is blown."
+   (@set cover (spy-training/forge-passport)))
 
 
-(namespace interrogator)
+;;; Try to call in from the outside.
+
+(namespace border-guards)
 (007/cover)               ; => "David Somerset"
 (007/realname)            ; => Error: Inaccessible
+
+(007/identify)            ; => "Hello, I'm David Somerset"
+(007/update-cover)        ; => Error: Inaccessible
 ```
 
 You can see an example of this package in action in my init.el,
@@ -210,9 +219,9 @@ namespace in your hooks or exported functions:
 ```lisp
 (namespace foo :export [ x ])
 
-;; Define a public var with a closure that captures a private var.
-(def x (@lambda () (@ private)))
+;; Capture a private var in a closure.
 (def private 'foo-private)
+(def x (@lambda () (@ private)))
 
 (namespace bar :import [ foo ])
 (funcall (@ x))                           ; => foo-private
