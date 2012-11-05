@@ -4,6 +4,9 @@
 ;; URL: https://github.com/chrisbarrett/elisp-namespaces
 ;; Version: 1.0.0
 ;;
+
+;;; License:
+
 ;; Copyright (c) 2012, Chris Barrett
 ;; All rights reserved.
 ;;
@@ -26,24 +29,26 @@
 ;; ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 ;; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-;;
 
-(provide 'namespaces)
+;;; Code:
 
 (defvar *ns-base-path* (concat user-emacs-directory "elisp/")
   "Defines the base directory for namespace resolution.")
 
+;;;###autoload
+(progn
 
 ;;; -------------------------- Load Subfeatures --------------------------------
 
-(require 'ns-core        "src/ns-core.el")
-(require 'ns-operators   "src/ns-operators.el")
-(require 'ns-definitions "src/ns-definitions.el")
-(require 'ns-namespace   "src/ns-namespace.el")
-(require 'ns-font-lock   "src/ns-font-lock.el")
+  (require 'ns-core        "src/ns-core.el")
+  (require 'ns-operators   "src/ns-operators.el")
+  (require 'ns-definitions "src/ns-definitions.el")
+  (require 'ns-namespace   "src/ns-namespace.el")
+  (require 'ns-font-lock   "src/ns-font-lock.el")
 
 ;;; ----------------------------------------------------------------------------
 
-(namespace user)
+  (namespace user))
 
+(provide 'namespaces)
 ;;; namespaces.el ends here
