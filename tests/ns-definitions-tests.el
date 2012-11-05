@@ -22,6 +22,16 @@
     (def x 'expected)
     (should (equal 'expected (foo/x)))))
 
+(check "def does not overwrite existing accessors"
+  (let* ((ns   (gensym))
+         (ns/x (intern (concat (symbol-name ns) "/x"))))
+    (eval
+     `(progn
+        (ns/export ,ns 'x)
+        (defn x () 'expected)
+        (def x 'fail)
+        (should (equal 'expected (,ns/x)))))))
+
 ;;; defmutable
 
 (check "can define and read var created with defmutable"
@@ -40,6 +50,16 @@
     (ns/export 'foo 'x)
     (defmutable x 'expected)
     (should (equal 'expected (foo/x)))))
+
+(check "defmutable does not overwrite existing accessors"
+  (let* ((ns   (gensym))
+         (ns/x (intern (concat (symbol-name ns) "/x"))))
+    (eval
+     `(progn
+        (ns/export ,ns 'x)
+        (defn x () 'expected)
+        (defmutable x 'fail)
+        (should (equal 'expected (,ns/x)))))))
 
 ;;; Redefinitions
 
@@ -75,6 +95,7 @@
            (hash (car (ns/make-key 'foo name))))
       (eval `(defn ,name () (interactive) 'expected))
       (should (commandp hash)))))
+
 
 
 ;; Local Variables:
