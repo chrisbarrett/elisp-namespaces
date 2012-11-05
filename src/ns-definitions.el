@@ -100,7 +100,8 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
     `(progn
        (defconst ,hash ,value ,docstring)
 
-       ,(when (ns/exported-p qual)
+       ,(when (and (ns/exported-p qual)
+                   (not (fboundp qual)))
           `(defaccessor ,qual ,docstring))
 
        ',name)))
@@ -120,7 +121,8 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
     `(progn
        (defvar ,hash ,value ,docstring)
 
-       ,(when (ns/exported-p qual)
+       ,(when (and (ns/exported-p qual)
+                   (not (fboundp qual)))
           `(defaccessor ,qual ,docstring))
 
        ',name)))
