@@ -28,11 +28,10 @@
 ;; Core namespace functions.
 ;;
 
-(namespace ns
+(namespace ns-font-lock
   :use [ ns-operators
          ns-definitions ])
 
-(provide 'ns-font-lock)
 
 (def match-kw
      (rx "(" (group
