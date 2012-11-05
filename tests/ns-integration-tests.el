@@ -75,6 +75,12 @@
   (namespace bar)
   (should-error (eval `(@set foo/public 'fail))))
 
+(check "@sym returns hash of accessor function, not symbol"
+  (namespace foo :export [ public ])
+  (def public 'x)
+  (namespace bar)
+  (should (functionp (@sym foo/public))))
+
 
 
 ;; Local Variables:
