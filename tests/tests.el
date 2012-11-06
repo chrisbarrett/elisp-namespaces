@@ -12,7 +12,7 @@
 
 ;;; ----------------------------------------------------------------------------
 
-(defun clear-hash (table)
+(defun ns/clear-hash (table)
   "Delete all entries in the given hashtable."
   (assert (hash-table-p table))
   (loop for k being the hash-keys of table
@@ -27,9 +27,9 @@
      ;; Rebind tables for tests.
      ;; Tables are copied to ensure custom equality comparers
      ;; are preserved.
-     (let ((ns/symbols-table (clear-hash (copy-hash-table ns/symbols-table)))
-           (ns/imports-table (clear-hash (copy-hash-table ns/imports-table)))
-           (ns/exports-table (clear-hash (copy-hash-table ns/exports-table)))
+     (let ((ns/symbols-table (ns/clear-hash (copy-hash-table ns/symbols-table)))
+           (ns/imports-table (ns/clear-hash (copy-hash-table ns/imports-table)))
+           (ns/exports-table (ns/clear-hash (copy-hash-table ns/exports-table)))
            (ns/current-ns (gensym)))
        ,@body)))
 
