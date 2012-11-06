@@ -38,22 +38,30 @@
 
 ;;; ------------------------------- Utilities ----------------------------------
 
+(defun ns/hook-or-fn-p (tpl)
+  "Returns true if the given (hash * name) tuple resolves to a function or hook variable."
+  (or (functionp (car tpl))
+      (string-match-p "-hook$" (symbol-name (cdr tpl)))))
+
 (defun ns/find-public-sym (ns sym)
-  "Gets the hash and name of a function if it is public, else nil."
-  (let* ((tuple (ns/make-key ns sym))
+  "Gets the hash and name of a symbol if it is public, else nil."
+  (let* ((tpl (ns/make-key ns sym))
          (meta  (ns/get-symbol-meta ns sym)))
-    (when (and meta (ns-meta-public? meta))
-      tuple)))
+    (when (and meta
+               (ns-meta-public? meta)
+               (ns/hook-or-fn-p tpl))
+      tpl)))
 
 (defun ns/find-imported-sym (unqualified-sym ns)
   "Try to find the given symbol in the imports for namespace NS.
 Returns the hash and name of the sym if if it succeeds, else nil"
   (let* ((tbl     (gethash ns ns/imports-table))
-         (tuples  (when tbl (hash-keys tbl)))
+         (tuples  (when tbl (ns/hash-keys tbl)))
          (match-p (lambda (tpl)
                     (let* ((name (cdr tpl))
                            (sym  (cdr (ns/split-sym name))))
-                      (equal sym unqualified-sym)))))
+                      (and (equal sym unqualified-sym)
+                           (ns/hook-or-fn-p tpl))))))
     (car-safe
      (when tuples
        (remove-if-not match-p tuples)))))
