@@ -80,21 +80,20 @@
       (puthash key (make-ns-meta) ns/symbols-table))
     key))
 
-(defun hash-keys (table)
-  (loop for k being the hash-keys of table
-        collect k))
+(defun ns/hash-keys (table)
+  (loop for k being the hash-keys of table collect k))
 
 (defun ns/get-symbol-name (hash)
   "Returns the interned symbol name corresponding to HASH, or nil"
   (let ((filtered (remove-if-not (lambda (tpl) (equal hash (car tpl)))
-                                 (hash-keys ns/symbols-table))))
+                                 (ns/hash-keys ns/symbols-table))))
     (cdr-safe (car-safe filtered))))
 
 (defun ns/get-symbol-hash (ns sym)
   "Returns the interned symbol name corresponding to HASH, or nil"
   (let* ((sym (ns/qualify ns sym))
          (filtered (remove-if-not (lambda (tpl) (equal sym (cdr tpl)))
-                                  (hash-keys ns/symbols-table))))
+                                  (ns/hash-keys ns/symbols-table))))
     (car-safe (car-safe filtered))))
 
 (defun ns/get-symbol-meta (ns sym)
@@ -147,7 +146,7 @@
     (when tbl
       (mapcar (lambda (tpl)
                 (ns/import from-ns into-ns (cdr tpl)))
-              (hash-keys tbl)))))
+              (ns/hash-keys tbl)))))
 
 
 

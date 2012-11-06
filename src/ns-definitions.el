@@ -40,7 +40,7 @@
 (defun ns/exported-p (sym)
   (ns-meta-public? (ns/get-symbol-meta ns/current-ns sym)))
 
-(defmacro defaccessor (sym docstring)
+(defmacro ns/defaccessor (sym docstring)
   "Make a default accessor function for a public var."
   (let* ((name (ns/qualify ns/current-ns sym))
          (doc  (or docstring
@@ -102,7 +102,7 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
 
        ,(when (and (ns/exported-p qual)
                    (not (fboundp qual)))
-          `(defaccessor ,qual ,docstring))
+          `(ns/defaccessor ,qual ,docstring))
 
        ',name)))
 
@@ -123,7 +123,7 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
 
        ,(when (and (ns/exported-p qual)
                    (not (fboundp qual)))
-          `(defaccessor ,qual ,docstring))
+          `(ns/defaccessor ,qual ,docstring))
 
        ',name)))
 
