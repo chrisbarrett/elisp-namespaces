@@ -38,23 +38,26 @@
     (@using foo
       (should (equal hash (@sym foo/bar))))))
 
-(check "@sym uses this namespace when resolving unqualified symbols"
-  (let ((hash (car (ns/intern 'foo 'bar)))
-        (ns/current-ns 'foo))
-    (should (equal hash (@sym bar)))))
+(check "@sym uses this namespace when resolving unqualified functions"
+  (with-fn foo/x () nil
+    (let ((hash (ns/hash 'foo/x))
+          (ns/current-ns 'foo))
+      (should (equal hash (@sym x))))))
 
-(check "@sym uses imports when resolving unqualified symbols"
-  (let ((hash (car (ns/intern 'foo 'x)))
-        (ns/current-ns 'bar))
-    (ns/export 'foo 'x)
-    (ns/import 'foo 'bar 'x)
-    (should (equal hash (@sym x)))))
+(check "@sym uses imports when resolving unqualified functions"
+  (with-fn foo/x () nil
+    (let ((hash (ns/hash 'foo/x))
+          (ns/current-ns 'bar))
+      (ns/export 'foo 'x)
+      (ns/import 'foo 'bar 'x)
+      (should (equal hash (@sym x))))))
 
-(check "@sym resolves qualified public symbols"
-  (let ((hash (car (ns/intern 'foo 'x)))
-        (ns/current-ns 'bar))
-    (ns/export 'foo 'x)
-    (should (equal hash (@sym foo/x)))))
+(check "@sym resolves qualified public functions"
+  (with-fn foo/x () nil
+    (let ((hash (car (ns/intern 'foo 'x)))
+          (ns/current-ns 'bar))
+      (ns/export 'foo 'x)
+      (should (equal hash (@sym foo/x))))))
 
 (check "@sym signals an error when the given symbol is not publicly accessible"
   (let ((hash (car (ns/intern 'foo 'bar))))

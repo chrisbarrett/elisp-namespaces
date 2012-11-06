@@ -81,6 +81,12 @@
   (namespace bar)
   (should (functionp (@sym foo/public))))
 
+(check "@sym returns hook variables directly"
+  (namespace foo :export [ test-hook ])
+  (def test-hook 'x)
+  (namespace bar)
+  (should (not (functionp (@sym foo/test-hook)))))
+
 
 
 ;; Local Variables:
