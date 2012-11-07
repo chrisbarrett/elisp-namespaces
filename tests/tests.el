@@ -1,5 +1,4 @@
-(provide 'ns-tests '(ns-core-tests
-                     ns-operators-tests))
+(provide 'ns-tests)
 (require 'ert)
 (require 'namespaces)
 (setq lexical-binding t)
