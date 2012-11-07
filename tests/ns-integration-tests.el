@@ -76,10 +76,10 @@
   (should-error (eval `(@set foo/public 'fail))))
 
 (check "@sym returns hash of accessor function, not symbol"
-  (namespace foo :export [ public ])
-  (def public 'x)
+  (namespace foo :export [ x ])
+  (def x nil)
   (namespace bar)
-  (should (functionp (@sym foo/public))))
+  (should (functionp (@sym foo/x))))
 
 (check "@sym returns hook variables directly"
   (namespace foo :export [ test-hook ])
