@@ -74,7 +74,7 @@
   (ns/export 'foo 'x)
   (ns/import 'foo 'bar 'x)
   (let* ((imports (gethash 'bar ns/imports-table))
-         (names   (mapcar (lambda (k) (cdr k)) (hash-keys imports))))
+         (names   (mapcar (lambda (k) (cdr k)) (ns/hash-keys imports))))
     (should (member 'foo/x names))))
 
 (check "cannot import symbols that have not been exported"

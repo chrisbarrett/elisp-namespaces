@@ -38,22 +38,35 @@
 
 ;;; ------------------------------- Utilities ----------------------------------
 
+(defun ns/hook-p (tpl)
+  "Returns true if the given (hash* name) tuple points to a hook var, else nil"
+  (string-match-p "-hook$" (symbol-name (cdr tpl))))
+
+(defun ns/hook-or-fn-p (tpl)
+  "Returns true if the given (hash * name) tuple resolves to a function or hook variable."
+  (or (functionp (car tpl))
+      (functionp (cdr tpl))
+      (ns/hook-p tpl)))
+
 (defun ns/find-public-sym (ns sym)
-  "Gets the hash and name of a function if it is public, else nil."
-  (let* ((tuple (ns/make-key ns sym))
+  "Gets the hash and name of a symbol if it is public, else nil."
+  (let* ((tpl (ns/make-key ns sym))
          (meta  (ns/get-symbol-meta ns sym)))
-    (when (and meta (ns-meta-public? meta))
-      tuple)))
+    (when (and meta
+               (ns-meta-public? meta)
+               (ns/hook-or-fn-p tpl))
+      tpl)))
 
 (defun ns/find-imported-sym (unqualified-sym ns)
   "Try to find the given symbol in the imports for namespace NS.
 Returns the hash and name of the sym if if it succeeds, else nil"
   (let* ((tbl     (gethash ns ns/imports-table))
-         (tuples  (when tbl (hash-keys tbl)))
+         (tuples  (when tbl (ns/hash-keys tbl)))
          (match-p (lambda (tpl)
                     (let* ((name (cdr tpl))
                            (sym  (cdr (ns/split-sym name))))
-                      (equal sym unqualified-sym)))))
+                      (and (equal sym unqualified-sym)
+                           (ns/hook-or-fn-p tpl))))))
     (car-safe
      (when tuples
        (remove-if-not match-p tuples)))))
@@ -78,11 +91,23 @@ Returns the hash and name of the sym if if it succeeds, else nil"
 (defmacro @sym (symbol)
   "Return the hashed name of SYM."
   (assert (symbolp symbol))
-  (let ((hash (car-safe (ns/resolve symbol))))
-    (assert hash ()
+  (let* ((tpl  (ns/resolve symbol))
+         (hash (car-safe tpl))
+         (name (cdr-safe tpl))
+         (ns   (car-safe (ns/split-sym name))))
+    (assert tpl ()
             "Symbol `%s` is undefined or inaccessible from namespace `%s`."
             symbol ns/current-ns)
-    `',hash))
+    `',(cond
+        ;; Return hash for hooks.
+        ((ns/hook-p tpl)
+         hash)
+        ;; Return names of public functions and var accessors.
+        ((and (not (equal ns ns/current-ns)) (functionp name))
+         name)
+        ;; In all other cases, return the hash.
+        (t
+         hash))))
 
 
 (defmacro @using (ns &rest body)

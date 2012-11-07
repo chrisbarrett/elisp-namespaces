@@ -75,6 +75,25 @@
   (namespace bar)
   (should-error (eval `(@set foo/public 'fail))))
 
+(check "@sym returns hash of accessor function for qualified symbol"
+  (namespace foo :export [ x ])
+  (def x nil)
+  (namespace bar)
+  (should (functionp (@sym foo/x))))
+
+(check "@sym returns hash of accessor function for unqualified symbol"
+  (namespace foo :export [ x ])
+  (def x nil)
+  (namespace bar :import [ foo ])
+  (should (functionp (@sym x))))
+
+
+(check "@sym returns hook variables directly"
+  (namespace foo :export [ test-hook ])
+  (def test-hook 'x)
+  (namespace bar)
+  (should (not (functionp (@sym foo/test-hook)))))
+
 
 
 ;; Local Variables:
