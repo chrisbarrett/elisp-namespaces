@@ -26,8 +26,8 @@
   (let* ((ns   (gensym))
          (ns/x (intern (concat (symbol-name ns) "/x"))))
     (eval
-     `(progn
-        (ns/export ,ns 'x)
+     `(@using ,ns
+        (ns/export ',ns 'x)
         (defn x () 'expected)
         (def x 'fail)
         (should (equal 'expected (,ns/x)))))))
@@ -55,8 +55,8 @@
   (let* ((ns   (gensym))
          (ns/x (intern (concat (symbol-name ns) "/x"))))
     (eval
-     `(progn
-        (ns/export ,ns 'x)
+     `(@using ,ns
+        (ns/export ',ns 'x)
         (defn x () 'expected)
         (defmutable x 'fail)
         (should (equal 'expected (,ns/x)))))))
