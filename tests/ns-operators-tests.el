@@ -50,14 +50,18 @@
           (ns/current-ns 'bar))
       (ns/export 'foo 'x)
       (ns/import 'foo 'bar 'x)
-      (should (equal hash (@sym x))))))
+      ;; Could legitimately return the sym or the alias.
+      (should (or (equal hash (@sym x))
+                  (equal 'foo/x (@sym x)))))))
 
 (check "@sym resolves qualified public functions"
   (with-fn foo/x () nil
     (let ((hash (car (ns/intern 'foo 'x)))
           (ns/current-ns 'bar))
       (ns/export 'foo 'x)
-      (should (equal hash (@sym foo/x))))))
+      ;; Could legitimately return the sym or the alias.
+      (should (or (equal hash (@sym foo/x))
+                  (equal 'foo/x (@sym foo/x)))))))
 
 (check "@sym signals an error when the given symbol is not publicly accessible"
   (let ((hash (car (ns/intern 'foo 'bar))))
