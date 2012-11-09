@@ -88,27 +88,33 @@ as well as conveniences to make setting up dependencies a snap.
 
 ## Installation
 
-Put namespaces.el in your loadpath, then require it in your init.el:
+The best way is to download and install the `namespaces` package from melpa.
+1. Make sure you've configured package management in your init.el:
+  ```lisp
+  (require 'package)
+
+  ;; Initialize packages.
+  (add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/"))
+  (package-initialize)
+  (unless package-archive-contents
+    (package-refresh-contents))
+  ```
+2. Install the `namespaces` package:
+  ```lisp
+  ;; Initialize namespaces.
+  (unless (package-installed-p 'namespaces)
+    (package-install 'namespaces))
+  (require 'namespaces)
+  ```
+
+Otherwise, clone this repo and add it to your load path, then:
 ```lisp
 (require 'namespaces)
 ```
 
 ### Optional Configuration
 
-1. Configure your package repositories, eg:
-
-   ```lisp
-   ;; Initialize packages.
-   (add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/"))
-   (add-to-list 'package-archives '("melpa"     . "http://melpa.milkbox.net/packages/"))
-
-   ;; Ensure the package archives have been initialized.
-   (package-initialize)
-   (unless package-archive-contents
-     (package-refresh-contents))
-   ```
-
-   The `namespace` macro makes it easy to load dependencies using the package management features in Emacs 24+;
+1. The `namespace` macro makes it easy to load dependencies using the package management features in Emacs 24+;
    make sure you set up all that package management stuff before you call those features.
 
 
