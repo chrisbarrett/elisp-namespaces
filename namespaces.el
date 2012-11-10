@@ -46,7 +46,7 @@
 
 ;;; Code:
 
-(defcustom *ns-base-path* (concat user-emacs-directory "elisp/")
+(defcustom ns/base-path (concat user-emacs-directory "elisp/")
   "Defines the base directory for namespace resolution."
   :group 'namespaces)
 
@@ -544,7 +544,7 @@ Forward-slashes (`/`) cannot be used." name)
     (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-pkg x xs)))
           packages)
     ;; Load emacs features and files.
-    (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-use *ns-base-path* x xs)))
+    (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-use ns/base-path x xs)))
           use))
   ;; Rebind the current namespace.
   (setq ns/current-ns name)

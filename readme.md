@@ -118,10 +118,10 @@ Otherwise, clone this repo and add it to your load path, then:
    make sure you set up all that package management stuff before you call those features.
 
 
-2. If needed, set `*ns-base-path*` to the directory containing your elisp files. The default is `~/.emacs.d/elisp/`:
+2. If needed, set `ns/base-path` to the directory containing your elisp files. The default is `~/.emacs.d/elisp/`:
 
    ```lisp
-   (setq *ns-base-path* "~/.emacs.d/lisp/")
+   (setq ns/base-path "~/.emacs.d/lisp/")
    ```
 
 ## Basic Usage
@@ -273,7 +273,7 @@ The example above will import only `x` and `y` from namespace `foo`.
 
 Load another elisp file from disk or require an emacs feature. Periods (`.`)
 are interpereted as path delimiters.
-The `*ns-base-path*` variable is used to set the base of the namespace search path.
+The `ns/base-path` variable is used to set the base of the namespace search path.
 
 This example will attempt to load BASE/bar/baz.el, as well as a few emacs features.
 ```lisp
