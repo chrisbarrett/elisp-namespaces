@@ -293,7 +293,7 @@ Call that symbol's accessor function instead." sym)
     `(funcall ',hash ,@args)))
 
 
-(defmacro* @set (symbol value)
+(defmacro @set (symbol value)
   "Set the value of a namespace-qualified symbol."
   (assert (symbolp symbol))
 
