@@ -555,8 +555,6 @@ Forward-slashes (`/`) cannot be used." name)
 
 ;;; ================================ Font Lock =================================
 
-(namespace ns)
-
 (def match-kw
      (rx "(" (group
               (or (and "def" (* (any graphic)))
@@ -584,6 +582,6 @@ Forward-slashes (`/`) cannot be used." name)
 
 ;;; ============================================================================
 
-(namespace user)
+(setq ns/current-ns 'user)
 (provide 'namespaces)
 ;;; namespaces.el ends here
