@@ -83,29 +83,30 @@ At a deeper level, a single global namespace makes elisp programming more annoyi
 I *agonize* over what to name my utility functions, because any name I choose could get clobbered at runtime.
 And prefixing everything by hand is so *manual*.
 
-This `namespace` package provides that basic level of encapsulation using a couple of simple macros,
+This package provides that basic level of encapsulation using a couple of simple macros,
 as well as conveniences to make setting up dependencies a snap.
 
 ## Installation
 
 The best way is to download and install the `namespaces` package from melpa.
-1. Make sure you've configured package management in your init.el:
-  ```lisp
-  (require 'package)
 
-  ;; Initialize packages.
-  (add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/"))
-  (package-initialize)
-  (unless package-archive-contents
-    (package-refresh-contents))
-  ```
-2. Install the `namespaces` package:
-  ```lisp
-  ;; Initialize namespaces.
-  (unless (package-installed-p 'namespaces)
-    (package-install 'namespaces))
-  (require 'namespaces)
-  ```
+  1. Make sure you've configured package management in your init.el:
+    ```lisp
+    (require 'package)
+
+    ;; Initialize packages.
+    (add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/"))
+    (package-initialize)
+    (unless package-archive-contents
+      (package-refresh-contents))
+    ```
+  2. Install the `namespaces` package:
+    ```lisp
+    ;; Initialize namespaces.
+    (unless (package-installed-p 'namespaces)
+      (package-install 'namespaces))
+    (require 'namespaces)
+    ```
 
 Otherwise, clone this repo and add it to your load path, then:
 ```lisp
@@ -170,7 +171,7 @@ This makes `enterprise/captain` a public var, and generates an accessor function
 Other namespaces can now access that symbol by invoking the accessor, or by
 adding it to their namespace imports and using `@call`:
 ```lisp
-(namespace j25)
+(namespace federation)
 (enterprise/captain)                   ; => "Picard"
 
 (namespace borg :import [ enterprise ])
@@ -187,6 +188,8 @@ Clients of your namespaced code do not need to know anything about namespaces or
 The `namespace` macro declares the given namespace as an Emacs feature, as if you called `(provide 'foo)`.
 Clients can use the standard `require` and `autoload` mechanisms to access your exported functions.
 
+### Functions and Vars
+
 Exported functions can be called using their fully qualified name:
 ```lisp
 (namespace foo :export [greet])
@@ -196,7 +199,7 @@ Exported functions can be called using their fully qualified name:
 (foo/greet)      ; => "Hello!"
 ```
 
-Similarly, exported vars can be read using auto-generated accessor functions:
+Similarly, exported vars can be read using their accessor functions:
 ```lisp
 (namespace foo :export [x])
 (def x 'hello)
@@ -206,7 +209,7 @@ Similarly, exported vars can be read using auto-generated accessor functions:
 ```
 
 By design, clients cannot modify exported vars with `@set`, even if they are defined with `defmutable`.
-Package writers should use `defcustom` when they want to define a var that can be customized by clients.
+Package writers should probably use `defcustom` when they want to define a var that can be customized by clients.
 
 The `defn`, `def` and `defmutable` macros obfuscate their true symbols to prevent callers from casually
 accessing private members of a namespace. You can obtain a symbol's underlying name using the `@sym` macro.
@@ -220,7 +223,9 @@ This is allows your private members to interoperate with foreign elisp. For exam
 (run-hooks 'example-hook)                 ; check your *Messages* buffer
 ```
 
-You can also use the `@lambda` macro when you want to capture the declaring
+### Hooks and Closures
+
+You can use the `@lambda` macro when you want to capture the declaring
 namespace in your hooks or exported functions:
 ```lisp
 (namespace foo :export [ x ])
@@ -232,6 +237,19 @@ namespace in your hooks or exported functions:
 (namespace bar :import [ foo ])
 (funcall (@ x))                           ; => foo-private
 ```
+
+Hook variables are treated specially. Unlike other vars, hook vars do not get accessor functions.
+Any exported var ending with `-hook` is directly accessible.
+```lisp
+(namespace foo :export [ foo-hook ])
+(def foo-hook nil)
+
+; ... in client code
+(require 'foo)
+(add-hook 'foo-hook '(lambda () (message "Hello")))
+```
+In the example above, the hook was directly accessed by the client.
+This allows your hook variables to behave just like callers would expect.
 
 ## De Res Macronis Nomenspationem
 
@@ -292,7 +310,7 @@ Download the specified elisp packages, then require or autoload them.
   :packages [ auto-complete ])
 ```
 
-### Dependency Forms and Autoloading
+### Autoloading
 
 In addition to loading elisp features, the `:packages` and `:use` arguments allow you to autoload symbols:
 ```lisp
