@@ -582,6 +582,10 @@ Forward-slashes (`/`) cannot be used." name)
 
 ;;; ============================================================================
 
-(setq ns/current-ns 'user)
+(namespace user)
 (provide 'namespaces)
+
+;; Local Variables:
+;; no-byte-compile: t
+;; End:
 ;;; namespaces.el ends here
