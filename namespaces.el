@@ -53,6 +53,8 @@
 ;;; ================================ Core ======================================
 
 (require 'cl)
+(autoload 'package-installed-p "package")
+(autoload 'package-install "package")
 
 (defstruct ns-meta
   public?
