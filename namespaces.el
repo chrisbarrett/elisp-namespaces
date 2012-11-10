@@ -1,4 +1,4 @@
-;;; namespaces.el --- namespaces for Elisp
+;;; namespaces.el --- An implementation of namespaces for Elisp, with an emphasis on immutabilty.
 ;;
 ;; Author: Chris Barrett
 ;; URL: https://github.com/chrisbarrett/elisp-namespaces
