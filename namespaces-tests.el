@@ -3,14 +3,6 @@
 (require 'namespaces)
 (setq lexical-binding t)
 
-;; Add `tests` dir to load path.
-(let* ((file (or load-file-name (buffer-file-name)))
-       (path (file-name-directory file))
-       )
-  (add-to-list 'load-path path))
-
-;;; ----------------------------------------------------------------------------
-
 (defun ns/clear-hash (table)
   "Delete all entries in the given hashtable."
   (assert (hash-table-p table))
