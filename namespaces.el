@@ -108,20 +108,20 @@
   (loop for k being the hash-keys of table collect k))
 
 (defun ns/get-symbol-name (hash)
-  "Returns the interned symbol name corresponding to HASH, or nil"
+  "Return the interned symbol name corresponding to HASH, or nil if no such name is interned."
   (let ((filtered (remove-if-not (lambda (tpl) (equal hash (car tpl)))
                                  (ns/hash-keys ns/symbols-table))))
     (cdr-safe (car-safe filtered))))
 
 (defun ns/get-symbol-hash (ns sym)
-  "Returns the interned symbol name corresponding to HASH, or nil"
+  "Return the interned symbol hash corresponding to SYM, or nil if no such hash is interned."
   (let* ((sym (ns/qualify ns sym))
          (filtered (remove-if-not (lambda (tpl) (equal sym (cdr tpl)))
                                   (ns/hash-keys ns/symbols-table))))
     (car-safe (car-safe filtered))))
 
 (defun ns/get-symbol-meta (ns sym)
-  "Gets the metadata for the given symbol, or nil no such symbol exists."
+  "Gets the metadata for the given symbol, or nil no such symbol is interned."
   (gethash (ns/make-key ns sym) ns/symbols-table))
 
 
@@ -524,8 +524,8 @@ USE is a vector of the form [ dep ... ], where each `dep` is either:
   2. an emacs feature to require
   3. a list of the form (feature & load ... ) where `feature` is an Emacs feature and each `load` is a LOAD FORM, described below.
 
-LOAD FORMS
-----------
+AUTOLOADING
+-----------
 A LOAD FORM represents an item that will be autoloaded. It is either
   1. a symbol
   2. a list of the form (sym &key interactive type docstring) that will be passed to the Emacs autoload function. See the documentation for AUTOLOAD for an explanation of these symbols.
@@ -555,16 +555,12 @@ Forward-slashes (`/`) cannot be used." name)
 
 ;;; ================================ Font Lock =================================
 
-(def match-kw
-     (rx "(" (group
-              (or (and "def" (* (any graphic)))
-                  "namespace" "@using" "@lambda"))))
-
 (defn match-identifier-after (&rest strings)
   (rx-to-string `(and "("
                       (or ,@strings) (+ space)
                       (group (+ (not (any space "()[]")))))))
 
+(def match-kw    (rx "(" (group (or "defn" "def" "defmutable" "namespace" "@using" "@lambda")) space))
 (def match-op    (rx "(" (group (or "@" "@dynamic" "@call" "@sym" "@set")) space))
 (def match-fname (@call match-identifier-after "defn"))
 (def match-var   (@call match-identifier-after "def" "defmutable"))
