@@ -188,8 +188,8 @@
 
 (defun ns/find-public-sym (ns sym)
   "Gets the hash and name of a symbol if it is public, else nil."
-  (let* ((tpl (ns/make-key ns sym))
-         (meta  (ns/get-symbol-meta ns sym)))
+  (let ((tpl (ns/make-key ns sym))
+        (meta  (ns/get-symbol-meta ns sym)))
     (when (and meta
                (ns-meta-public? meta)
                (ns/hook-or-fn-p tpl))
@@ -428,7 +428,7 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
       xs)))
 
 (defun ns/destructure-dep (handler)
-  "Calls HANDLER to load the dependency form, provided the :when and :unless keywords do not override this.."
+  "Calls HANDLER to load the dependency form, provided the :when and :unless keywords do not override this."
   (declare (indent 1))
   `(lambda (dep)
      (destructuring-bind
@@ -445,7 +445,7 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
 
 
 (defun ns/handle-import (from-ns into-ns deps)
-  "Load dependencies. If dependenices is empty, load all symbols exported by FROM-NS."
+  "Load dependencies. If DEPS is empty, load all symbols exported by FROM-NS."
   (if deps
       (loop for sym in deps do (ns/import from-ns into-ns sym))
     (ns/import-all from-ns into-ns)))
@@ -537,16 +537,16 @@ A LOAD FORM represents an item that will be autoloaded. It is either
   `(let ((name ',name))
      ;; Export the given symbols.
      (mapc (lambda (x) (ns/export name x))
-	   ,export)
+           ,export)
      ;; Import the given symbols from other namespaces.
-     (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-import x name xs))) 
-	   ,import)
+     (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-import x name xs)))
+           ,import)
      ;; download and load packages.
      (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-pkg x xs)))
-	   ,packages)
+           ,packages)
      ;; Load emacs features and files.
      (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-use ns/base-path x xs)))
-	   ,use)
+           ,use)
      ;; Rebind the current namespace.
      (setq ns/current-ns name)
      (provide name)))
