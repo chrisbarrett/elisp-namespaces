@@ -2,7 +2,7 @@
 ;;
 ;; Author: Chris Barrett
 ;; URL: https://github.com/chrisbarrett/elisp-namespaces
-;; Version: 1.0.1
+;; Version: 1.0.2
 ;;
 
 ;;; License:
@@ -533,27 +533,28 @@ A LOAD FORM represents an item that will be autoloaded. It is either
   (declare (indent 1))
   (assert (symbolp name))
   (assert (not (string-match-p "/" (symbol-name name))) ()
-          "Invalid namespace identifier: `%s`
-Forward-slashes (`/`) cannot be used." name)
-  (@using ns
-    ;; Export the given symbols.
-    (mapc (lambda (x) (ns/export name x))
-          export)
-    ;; Import the given symbols from other namespaces.
-    (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-import x name xs)))
-          import)
-    ;; download and load packages.
-    (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-pkg x xs)))
-          packages)
-    ;; Load emacs features and files.
-    (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-use ns/base-path x xs)))
-          use))
-  ;; Rebind the current namespace.
-  (setq ns/current-ns name)
-  `(provide ',name))
+          "Invalid namespace identifier: `%s`. Forward-slashes (`/`) cannot be used." name)
+  `(let ((name ',name))
+     ;; Export the given symbols.
+     (mapc (lambda (x) (ns/export name x))
+	   ,export)
+     ;; Import the given symbols from other namespaces.
+     (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-import x name xs))) 
+	   ,import)
+     ;; download and load packages.
+     (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-pkg x xs)))
+	   ,packages)
+     ;; Load emacs features and files.
+     (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-use ns/base-path x xs)))
+	   ,use)
+     ;; Rebind the current namespace.
+     (setq ns/current-ns name)
+     (provide name)))
 
 
 ;;; ================================ Font Lock =================================
+
+(namespace ns)
 
 (defn match-identifier-after (&rest strings)
   (rx-to-string `(and "("
