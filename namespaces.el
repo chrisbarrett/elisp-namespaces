@@ -534,6 +534,8 @@ A LOAD FORM represents an item that will be autoloaded. It is either
   (assert (symbolp name))
   (assert (not (string-match-p "/" (symbol-name name))) ()
           "Invalid namespace identifier: `%s`. Forward-slashes (`/`) cannot be used." name)
+  (setq ns/current-ns name)
+
   `(let ((name ',name))
      ;; Export the given symbols.
      (mapc (lambda (x) (ns/export name x))
@@ -547,8 +549,7 @@ A LOAD FORM represents an item that will be autoloaded. It is either
      ;; Load emacs features and files.
      (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-use ns/base-path x xs)))
            ,use)
-     ;; Rebind the current namespace.
-     (setq ns/current-ns name)
+
      (provide name)))
 
 
