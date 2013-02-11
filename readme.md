@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/chrisbarrett/elisp-namespaces.png)](https://travis-ci.org/chrisbarrett/elisp-namespaces)
 
-An implementation of namespaces for Emacs LISP, with an emphasis on
+An implementation of namespaces for Emacs Lisp, with an emphasis on
 immutabilty.  Helps you keep the global namespace clean and protect your
 symbols from clobbering.
 
@@ -51,7 +51,7 @@ Requires Emacs 24 or later.
 (defmutable cover "David Somerset")
 
 (defn identify ()
-   (concat "Hello, I'm " cover "."))
+   (concat "Hello, I'm " (@ cover) "."))
 
 (defn update-cover ()
    "Update identity if cover is blown."
@@ -270,6 +270,34 @@ namespace in your hooks or exported functions:
 
 (namespace bar :import [ foo ])
 (funcall (@ x))                           ; => foo-private
+```
+
+### Escape Hatches
+
+It is sometimes necessary to enter a namespace manually within non-
+namespaced code. The `in-ns` macro is provided for this purpose.
+
+```lisp
+(namespace foo)
+(def x "inside foo")
+
+(defun non-namespaced-fn ()
+  (in-ns foo
+    (message (@ x))))   ; => "inside foo"
+```
+
+The `in-ns` macro provides a controlled means of breaking encapsulation.
+When all else fails, you can use it to access private vars or redefine a
+`def` as `defmutable` in code you do not control.
+
+```lisp
+(namespace closed)
+(def x "immutable")
+
+(namespace user)
+(in-ns closed
+  (message (@ x))            ; => "immutable"
+  (defmutable x "mutable"))  ; => "mutable"
 ```
 
 ## De Res Macronis Nomenspationem
