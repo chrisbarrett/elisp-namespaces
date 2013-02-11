@@ -174,15 +174,10 @@
 
 (defvar ns/current-ns 'ns)
 
-(defun ns/hook-p (tpl)
-  "Returns true if the given (hash* name) tuple points to a hook var, else nil"
-  (string-match-p "-hook$" (symbol-name (cdr tpl))))
-
-(defun ns/hook-or-fn-p (tpl)
-  "Returns true if the given (hash * name) tuple resolves to a function or hook variable."
+(defun ns/fn-p (tpl)
+  "Returns true if the given (hash * name) tuple resolves to a function."
   (or (functionp (car tpl))
-      (functionp (cdr tpl))
-      (ns/hook-p tpl)))
+      (functionp (cdr tpl))))
 
 (defun ns/find-public-sym (ns sym)
   "Gets the hash and name of a symbol if it is public, else nil."
@@ -190,7 +185,7 @@
         (meta  (ns/get-symbol-meta ns sym)))
     (when (and meta
                (ns-meta-public? meta)
-               (ns/hook-or-fn-p tpl))
+               (ns/fn-p tpl))
       tpl)))
 
 (defun ns/find-imported-sym (unqualified-sym ns)
@@ -202,7 +197,7 @@ Returns the hash and name of the sym if if it succeeds, else nil"
                     (let* ((name (cdr tpl))
                            (sym  (cdr (ns/split-sym name))))
                       (and (equal sym unqualified-sym)
-                           (ns/hook-or-fn-p tpl))))))
+                           (ns/fn-p tpl))))))
     (car-safe
      (when tuples
        (remove-if-not match-p tuples)))))
@@ -233,16 +228,13 @@ Returns the hash and name of the sym if if it succeeds, else nil"
     (assert tpl ()
             "Symbol `%s` is undefined or inaccessible from namespace `%s`."
             symbol ns/current-ns)
-    `',(cond
-        ;; Return hash for hooks.
-        ((ns/hook-p tpl)
-         hash)
-        ;; Return names of public functions and var accessors.
-        ((and (not (equal ns ns/current-ns)) (functionp name))
-         name)
-        ;; In all other cases, return the hash.
-        (t
-         hash))))
+
+    ;; Return names of public functions and var accessors.
+    ;; In all other cases, return the hash.
+    `',(if (and (not (equal ns ns/current-ns))
+                (functionp name))
+           name
+         hash)))
 
 (defalias '@sym '~)
 

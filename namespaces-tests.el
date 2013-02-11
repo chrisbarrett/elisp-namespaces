@@ -597,13 +597,6 @@
   (should (functionp (~ x))))
 
 
-(check "~ returns hook variables directly"
-  (namespace foo :export [ test-hook ])
-  (def test-hook 'x)
-  (namespace bar)
-  (should (not (functionp (~ foo/test-hook)))))
-
-
 ;;; ============================================================================
 
 ;; Local Variables:
