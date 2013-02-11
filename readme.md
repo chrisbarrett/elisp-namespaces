@@ -1,5 +1,7 @@
 # Elisp Namespaces
 
+[![Build Status](https://travis-ci.org/chrisbarrett/elisp-namespaces.png)](https://travis-ci.org/chrisbarrett/elisp-namespaces)
+
 An implementation of namespaces for Emacs LISP, with an emphasis on immutabilty.
 Helps you keep the global namespace clean and protect your symbols from clobbering.
 
