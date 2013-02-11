@@ -461,6 +461,8 @@
 (check "can autoload packages"
   (let    ((pkg (gensym))
            (result))
+    (require 'package)
+
     (flet (
            (package-install (x))
 
