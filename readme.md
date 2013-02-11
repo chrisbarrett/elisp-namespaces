@@ -134,12 +134,12 @@ You can define a namespace or reopen an existing one using the `namespace` macro
 (namespace enterprise)
 ```
 
-You can define namespaced functions using `defn`, and apply them using `@call`.
+You can define namespaced functions using `defn`, and apply them using `_`.
 ```lisp
 (defn greet (name)
   (concat "Hello, " name "!"))
 
-(@call greet "Spock")    ; => "Hello, Spock!"
+(_ greet "Spock")    ; => "Hello, Spock!"
 ```
 
 Namespaced vars are defined using `def`. You can retrieve their values using the `@` macro.
@@ -169,13 +169,13 @@ To make a namespaced symbol publicly-accessible, add it to the exports list for 
 ```
 This makes `enterprise/captain` a public var, and generates an accessor function.
 Other namespaces can now access that symbol by invoking the accessor, or by
-adding it to their namespace imports and using `@call`:
+adding it to their namespace imports and using `_`:
 ```lisp
 (namespace federation)
 (enterprise/captain)                   ; => "Picard"
 
 (namespace borg :import [ enterprise ])
-(@call captain)                        ; => "Picard"
+(_ captain)                        ; => "Picard"
 ```
 These accessor functions add a nice layer of safety: if your requirements change down the
 track (eg, you need logging), you can safely reimplement an acccessor by hand without
@@ -212,27 +212,27 @@ By design, clients cannot modify exported vars with `@set`, even if they are def
 Package writers should probably use `defcustom` when they want to define a var that can be customized by clients.
 
 The `defn`, `def` and `defmutable` macros obfuscate their true symbols to prevent callers from casually
-accessing private members of a namespace. You can obtain a symbol's underlying name using the `@sym` macro.
+accessing private members of a namespace. You can obtain a symbol's underlying name using the `~` macro.
 This is allows your private members to interoperate with foreign elisp. For example:
 ```lisp
 (defn private () (message "TOP SECRET"))
 
 (defvar example-hook)
-(add-hook 'example-hook (@sym private))
+(add-hook 'example-hook (~ private))
 
 (run-hooks 'example-hook)                 ; check your *Messages* buffer
 ```
 
 ### Hooks and Closures
 
-You can use the `@lambda` macro when you want to capture the declaring
+You can use the `lambda-` macro when you want to capture the declaring
 namespace in your hooks or exported functions:
 ```lisp
 (namespace foo :export [ x ])
 
 ;; Capture a private var in a closure.
 (def private 'foo-private)
-(def x (@lambda () (@ private)))
+(def x (lambda- () (@ private)))
 
 (namespace bar :import [ foo ])
 (funcall (@ x))                           ; => foo-private
@@ -276,7 +276,7 @@ Import public symbols from another namespace:
 (def x "Hello")
 
 (namespace bar :import [foo])
-(@call x)                            ; => "Hello"
+(_ x)                            ; => "Hello"
 ```
 
 The default behaviour is to import all public symbols. You can load a subset

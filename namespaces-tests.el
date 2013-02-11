@@ -145,99 +145,99 @@
 
 ;;; ----------------------------------------------------------------------------
 
-;;; @sym
+;;; ~
 
-(check "@sym returns the hash of the given qualified name"
+(check "~ returns the hash of the given qualified name"
   (let ((hash (car (ns/intern 'foo 'bar))))
-    (@using foo
-      (should (equal hash (@sym foo/bar))))))
+    (in-ns foo
+      (should (equal hash (~ foo/bar))))))
 
-(check "@sym uses this namespace when resolving unqualified functions"
+(check "~ uses this namespace when resolving unqualified functions"
   (with-fn foo/x () nil
     (let ((hash (ns/hash 'foo/x))
           (ns/current-ns 'foo))
-      (should (equal hash (@sym x))))))
+      (should (equal hash (~ x))))))
 
-(check "@sym uses imports when resolving unqualified functions"
+(check "~ uses imports when resolving unqualified functions"
   (with-fn foo/x () nil
     (let ((hash (ns/hash 'foo/x))
           (ns/current-ns 'bar))
       (ns/export 'foo 'x)
       (ns/import 'foo 'bar 'x)
       ;; Could legitimately return the sym or the alias.
-      (should (or (equal hash (@sym x))
-                  (equal 'foo/x (@sym x)))))))
+      (should (or (equal hash (~ x))
+                  (equal 'foo/x (~ x)))))))
 
-(check "@sym resolves qualified public functions"
+(check "~ resolves qualified public functions"
   (with-fn foo/x () nil
     (let ((hash (car (ns/intern 'foo 'x)))
           (ns/current-ns 'bar))
       (ns/export 'foo 'x)
       ;; Could legitimately return the sym or the alias.
-      (should (or (equal hash (@sym foo/x))
-                  (equal 'foo/x (@sym foo/x)))))))
+      (should (or (equal hash (~ foo/x))
+                  (equal 'foo/x (~ foo/x)))))))
 
-(check "@sym signals an error when the given symbol is not publicly accessible"
+(check "~ signals an error when the given symbol is not publicly accessible"
   (let ((hash (car (ns/intern 'foo 'bar))))
-    (should-error (eval '(@sym foo/bar)))))
+    (should-error (eval '(~ foo/bar)))))
 
-(check "@sym signals an error when the given symbol is undefined"
-  (should-error (eval '(@sym foo/bar))))
+(check "~ signals an error when the given symbol is undefined"
+  (should-error (eval '(~ foo/bar))))
 
-;;; @using
+;;; in-ns
 
-(check "@using rebinds the current namespace for body"
-  (@using foo (should (equal 'foo ns/current-ns))))
+(check "in-ns rebinds the current namespace for body"
+  (in-ns foo (should (equal 'foo ns/current-ns))))
 
-(check "@using reverts the current namespace after evalutating body"
+(check "in-ns reverts the current namespace after evalutating body"
   (let* ((g (gensym))
          (ns/current-ns g))
-    (@using foo)
+    (in-ns foo)
     (should (equal g ns/current-ns))))
 
 ;;; @
 
 (check "@ returns the value of the given qualified sym from this namespace"
-  (@using foo
+  (in-ns foo
     (with-var x 'expected
       (should (equal 'expected (@ foo/x))))))
 
 (check "@ returns the value of the given unqualified sym from this namespace"
-  (@using foo
+  (in-ns foo
     (with-var x 'expected
       (should (equal 'expected (@ x))))))
 
 (check "@ signals an error when the given sym is not in this namespace (even when public)"
   (with-var foo/x 'fail
     (setf (ns-meta-public? (ns/get-symbol-meta 'foo 'x)) t)
-    (@using bar (should-error (eval '(@ foo/x))))))
+    (in-ns bar (should-error (eval '(@ foo/x))))))
 
 (check "@ signals error when given symbol is undefined"
   (should-error (eval '(@ foo))))
 
 (check "@ signals error when given symbol is not accessible"
   (with-var foo/x nil
-    (@using baz
+    (in-ns baz
       (should-error (eval `(@ foo/x))))))
 
 ;;; @dynamic
 
 (check "@dynamic delegates to @"
-  (@using foo
+  (in-ns foo
      (with-var foo/x 'expected
        (should (equal 'expected (@dynamic 'x))))))
 
 ;;; @set
 
 (check "@set modifies mutable vars using unqualified symbol"
-  (@using foo
+  (in-ns foo
     (with-var x ()
       (setf (ns-meta-mutable? (ns/get-symbol-meta 'foo 'x)) t)
       (@set x 'expected)
       (should (equal 'expected (eval (ns/get-symbol-hash 'foo 'x)))))))
 
 (check "@set modifies mutable vars using qualified symbol"
-  (@using foo
+  (in-ns foo
     (with-var x ()
       (setf (ns-meta-mutable? (ns/get-symbol-meta 'foo 'x)) t)
       (@set foo/x 'expected)
@@ -247,37 +247,37 @@
   (should-error (eval `(@set foo/x 'error))))
 
 (check "@set signals error when target is inaccessible"
-  (@using foo
+  (in-ns foo
     (with-var x ()
       (setf (ns-meta-mutable? (ns/get-symbol-meta 'foo 'x)) t)
-      (@using bar (should-error (eval `(@set foo/x 'error)))))))
+      (in-ns bar (should-error (eval `(@set foo/x 'error)))))))
 
-;;; @call
+;;; _
 
-(check "@call applies qualified function"
-  (@using foo
+(check "_ applies qualified function"
+  (in-ns foo
     (with-fn foo/x () 'expected
-      (should (equal 'expected (@call foo/x))))))
+      (should (equal 'expected (_ foo/x))))))
 
-(check "@call applies arguments"
-  (@using foo
+(check "_ applies arguments"
+  (in-ns foo
     (with-fn foo/x (i) i
-      (should (equal 'expected (@call foo/x 'expected))))))
+      (should (equal 'expected (_ foo/x 'expected))))))
 
-(check "@call signals error when applying an inaccessbile fn"
+(check "_ signals error when applying an inaccessbile fn"
   (with-fn foo/x () 'fail
-    (@using bar
-      (should-error (eval '(@call foo/x))))))
+    (in-ns bar
+      (should-error (eval '(_ foo/x))))))
 
-(check "@call signals error when applying an undefined fn"
-  (should-error (eval `(@call fail))))
+(check "_ signals error when applying an undefined fn"
+  (should-error (eval `(_ fail))))
 
-;;; @lambda
+;;; lambda-
 
-(check "@lambda captures namespace environment"
+(check "lambda- captures namespace environment"
   (let ((x))
-    (@using foo (setq x (@lambda () ns/current-ns)))
-    (@using bar (should (equal 'foo (funcall x))))))
+    (in-ns foo (setq x (lambda- () ns/current-ns)))
+    (in-ns bar (should (equal 'foo (funcall x))))))
 
 
 ;;; ============================== Definitions =================================
@@ -285,7 +285,7 @@
 ;;; def
 
 (check "can define and read var created with def"
-  (@using foo
+  (in-ns foo
    (def var 'expected)
    (should (equal 'expected (@ var)))))
 
@@ -294,7 +294,7 @@
   (should-error (eval `(@set var 'fail))))
 
 (check "def creates accessor function for public vars"
-  (@using foo
+  (in-ns foo
     (ns/export 'foo 'x)
     (def x 'expected)
     (should (equal 'expected (foo/x)))))
@@ -303,7 +303,7 @@
   (let* ((ns   (gensym))
          (ns/x (intern (concat (symbol-name ns) "/x"))))
     (eval
-     `(@using ,ns
+     `(in-ns ,ns
         (ns/export ',ns 'x)
         (defn x () 'expected)
         (def x 'fail)
@@ -312,18 +312,18 @@
 ;;; defmutable
 
 (check "can define and read var created with defmutable"
-  (@using foo
+  (in-ns foo
     (defmutable var 'expected)
     (should (equal 'expected (@ var)))))
 
 (check "can set namespaced var created with defmutable"
-  (@using foo
+  (in-ns foo
      (defmutable var)
      (@set var 'expected)
      (should (equal 'expected (@ var)))))
 
 (check "defmutable creates accessor function for public vars"
-  (@using foo
+  (in-ns foo
     (ns/export 'foo 'x)
     (defmutable x 'expected)
     (should (equal 'expected (foo/x)))))
@@ -332,7 +332,7 @@
   (let* ((ns   (gensym))
          (ns/x (intern (concat (symbol-name ns) "/x"))))
     (eval
-     `(@using ,ns
+     `(in-ns ,ns
         (ns/export ',ns 'x)
         (defn x () 'expected)
         (defmutable x 'fail)
@@ -341,7 +341,7 @@
 ;;; Redefinitions
 
 (check "can redefine def vars as defmutable vars and set"
-  (@using foo
+  (in-ns foo
     (def var nil)
     (defmutable var)
     (@set var 'expected)
@@ -356,18 +356,18 @@
 
 (check "can call function defined with defn"
   (defn x () 'expected)
-  (should (equal 'expected (@call x))))
+  (should (equal 'expected (_ x))))
 
 (check "defn should tolerate body form in docstring position"
   (defn x () "expected")
-  (should (equal "expected" (@call x))))
+  (should (equal "expected" (_ x))))
 
 (check "defn should be callable with arguments"
   (defn sqr (i) (* i i))
-  (should (equal 9 (@call sqr 3))))
+  (should (equal 9 (_ sqr 3))))
 
 (check "defn falls back to defun for command declarations"
-  (@using foo
+  (in-ns foo
     (let* ((name (gensym))
            (hash (car (ns/make-key 'foo name))))
       (eval `(defn ,name () (interactive) 'expected))
@@ -396,18 +396,18 @@
   (namespace foo :export [ public ])
   (defn public () 'expected)
   (namespace bar :import [ foo ])
-  (should (equal 'expected (@call public))))
+  (should (equal 'expected (_ public))))
 
 
 (check "can call exported fn using qualified symbol"
   (namespace foo :export [ public ])
   (defn public () 'expected)
-  (@call foo/public )
+  (_ foo/public )
   (namespace bar)
-  (should (equal 'expected (@call foo/public))))
+  (should (equal 'expected (_ foo/public))))
 
 
-(check "can call exported fn without @call using qualified symbol"
+(check "can call exported fn without _ using qualified symbol"
   (namespace foo :export [ public ])
   (defn public () 'expected)
   (namespace bar)
@@ -535,14 +535,14 @@
 (check "should get error when accessing another namespace's private fn using unqualified symbol"
   (defn private ())
   (namespace foo)
-  (should-error (eval `(@call private))))
+  (should-error (eval `(_ private))))
 
 
 (check "should get error when accessing another namespace's private fn using qualified symbol"
   (namespace foo)
   (defn private ())
   (namespace bar)
-  (should-error (eval `(@call foo/private))))
+  (should-error (eval `(_ foo/private))))
 
 
 (check "should get error when accessing unimported public var using unqualified symbol"
@@ -572,7 +572,7 @@
   (namespace foo :export [ public ])
   (defn public ())
   (namespace bar)
-  (should-error (eval `(@call public))))
+  (should-error (eval `(_ public))))
 
 
 ;;; Exported Vars
@@ -589,24 +589,24 @@
   (namespace bar)
   (should-error (eval `(@set foo/public 'fail))))
 
-(check "@sym returns hash of accessor function for qualified symbol"
+(check "~ returns hash of accessor function for qualified symbol"
   (namespace foo :export [ x ])
   (def x nil)
   (namespace bar)
-  (should (functionp (@sym foo/x))))
+  (should (functionp (~ foo/x))))
 
-(check "@sym returns hash of accessor function for unqualified symbol"
+(check "~ returns hash of accessor function for unqualified symbol"
   (namespace foo :export [ x ])
   (def x nil)
   (namespace bar :import [ foo ])
-  (should (functionp (@sym x))))
+  (should (functionp (~ x))))
 
 
-(check "@sym returns hook variables directly"
+(check "~ returns hook variables directly"
   (namespace foo :export [ test-hook ])
   (def test-hook 'x)
   (namespace bar)
-  (should (not (functionp (@sym foo/test-hook)))))
+  (should (not (functionp (~ foo/test-hook)))))
 
 
 ;;; ============================================================================

@@ -87,7 +87,6 @@
          (name (symbol-name (cdr tpl))))
     (intern (concat ns "/" name))))
 
-
 (defun ns/make-key (ns sym)
   "Make a key for the symbols table."
   (let* ((sym  (ns/qualify ns sym))
@@ -123,7 +122,6 @@
 (defun ns/get-symbol-meta (ns sym)
   "Gets the metadata for the given symbol, or nil no such symbol is interned."
   (gethash (ns/make-key ns sym) ns/symbols-table))
-
 
 ;;; --------------------------- Imports/Exports -----------------------------------
 
@@ -225,7 +223,7 @@ Returns the hash and name of the sym if if it succeeds, else nil"
 
 ;;; ----------------------------------------------------------------------------
 
-(defmacro @sym (symbol)
+(defmacro ~ (symbol)
   "Return the hashed name of SYM."
   (assert (symbolp symbol))
   (let* ((tpl  (ns/resolve symbol))
@@ -246,14 +244,12 @@ Returns the hash and name of the sym if if it succeeds, else nil"
         (t
          hash))))
 
-
-(defmacro @using (ns &rest body)
+(defmacro in-ns (ns &rest body)
   "Dynamically rebind the current namespace to NS while evaluating BODY."
   (declare (indent 1))
   (assert (symbolp ns))
   `(let ((ns/current-ns ',ns))
      ,@body))
-
 
 (defmacro @ (symbol)
   "Evaluate SYMBOL as a var in the current namespace context."
@@ -270,13 +266,7 @@ Returns the hash and name of the sym if if it succeeds, else nil"
 Call that symbol's accessor function instead." sym)
     hash))
 
-
-(defun @dynamic (symbol)
-  "Evaluate a namespace-qualified symbol dynamically."
-  (eval `(@ ,symbol)))
-
-
-(defmacro @call (fn &rest args)
+(defmacro _ (fn &rest args)
   "Apply the given namespace-qualified function."
   (assert (symbolp fn))
   (let* ((tpl  (ns/resolve fn))
@@ -291,7 +281,6 @@ Call that symbol's accessor function instead." sym)
             "`%s` is not a function. Use `@` to evaluate vars." sym
             )
     `(funcall ',hash ,@args)))
-
 
 (defmacro @set (symbol value)
   "Set the value of a namespace-qualified symbol."
@@ -317,11 +306,10 @@ Package authors should use DEFCUSTOM for publicly mutable vars." name)
       (error "Variable `%s` is undefined or inaccessible from namespace `%s`."
              symbol ns/current-ns))))
 
-(defmacro @lambda (args &rest body)
+(defmacro lambda- (args &rest body)
   "A lambda function that captures the surrounding namespace environment."
   (declare (indent defun))
-  `(lambda ,args (@using ,ns/current-ns ,@body)))
-
+  `(lambda ,args (in-ns ,ns/current-ns ,@body)))
 
 ;;; ================================ Definitions ===============================
 
@@ -366,13 +354,12 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
        (,defun-form ,hash ,arglist
          ,docstring
          ,interactive
-         (@using ,ns/current-ns ,@body))
+         (in-ns ,ns/current-ns ,@body))
 
        ,(when (ns/exported-p qual)
           `(defalias ',qual ',hash))
 
        ',qual)))
-
 
 (defmacro def (symbol value &optional docstring)
   "Define SYMBOL as an immutable var in the current namespace. Otherwise identical to `defconst`."
@@ -394,7 +381,6 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
 
        ',name)))
 
-
 (defmacro defmutable (symbol &optional value docstring)
   "Define SYMBOL as a mutable var in the current namespace. Otherwise identical to `defvar`."
   (assert (symbolp symbol))
@@ -414,7 +400,6 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
           `(ns/defaccessor ,qual ,docstring))
 
        ',name)))
-
 
 ;;; ================================ Namespace =================================
 
@@ -443,13 +428,11 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
          (when (and w (not u))
            (funcall ,handler sym autos))))))
 
-
 (defun ns/handle-import (from-ns into-ns deps)
   "Load dependencies. If DEPS is empty, load all symbols exported by FROM-NS."
   (if deps
       (loop for sym in deps do (ns/import from-ns into-ns sym))
     (ns/import-all from-ns into-ns)))
-
 
 (defun ns/autoload-dep (feature dep)
   "Autoload symbols from FEATURE, where DEP is a list of symbols to autoload."
@@ -461,7 +444,6 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
                                   &allow-other-keys)
           dep
         (autoload symbol feat docstring interactive type)))))
-
 
 (defun ns/join-dirs (&rest directories)
   (reduce (lambda (l r) (file-name-as-directory (concat l r)))
@@ -475,7 +457,6 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
     (when xs
       (concat path ".el"))))
 
-
 (defun ns/handle-use (base feature autoloads)
   "Autoload the specified symbols from namespace or feature FEATURE."
   (let* ((path (ns/ns->file base feature))
@@ -488,7 +469,6 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
      (t
       (require feature)))))
 
-
 (defun ns/handle-pkg (pkg autoloads)
   "Require a package from an online repository, downloading it if needed."
   (unless (package-installed-p pkg)
@@ -496,7 +476,6 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
   (if autoloads
       (loop for dep in autoloads collect (ns/autoload-dep pkg dep))
     (require pkg)))
-
 
 ;;; ----------------------------------------------------------------------------
 
@@ -552,7 +531,6 @@ A LOAD FORM represents an item that will be autoloaded. It is either
 
      (provide name)))
 
-
 ;;; ================================ Font Lock =================================
 
 (namespace ns)
@@ -562,14 +540,14 @@ A LOAD FORM represents an item that will be autoloaded. It is either
                       (or ,@strings) (+ space)
                       (group (+ (not (any space "()[]")))))))
 
-(def match-kw    (rx "(" (group (or "defn" "def" "defmutable" "namespace" "@using" "@lambda")) space))
-(def match-op    (rx "(" (group (or "@" "@dynamic" "@call" "@sym" "@set")) space))
-(def match-fname (@call match-identifier-after "defn"))
-(def match-var   (@call match-identifier-after "def" "defmutable"))
-(def match-ns    (@call match-identifier-after "namespace" "@using"))
+(def match-kw    (rx "(" (group (or "defn" "def" "defmutable" "namespace" "in-ns" "lambda-")) space))
+(def match-op    (rx "(" (group (or "@" "_" "~" "@set")) space))
+(def match-fname (_ match-identifier-after "defn"))
+(def match-var   (_ match-identifier-after "def" "defmutable"))
+(def match-ns    (_ match-identifier-after "namespace" "in-ns"))
 
 (add-hook 'emacs-lisp-mode-hook
-          (@lambda ()
+          (lambda- ()
             (font-lock-add-keywords
              nil
              `((,(@ match-kw)    1 font-lock-keyword-face)
