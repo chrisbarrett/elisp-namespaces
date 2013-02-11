@@ -4,7 +4,8 @@ language: emacs-lisp
 env:
   matrix:
     - EMACS=emacs24
-    - EMACS=emacs-snapshot
+    allow-failures:
+      - EMACS=emacs-snapshot
 
 ### Install emacs version for each test.
 install:
