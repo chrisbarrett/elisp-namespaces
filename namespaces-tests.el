@@ -220,13 +220,6 @@
     (in-ns baz
       (should-error (eval `(@ foo/x))))))
 
-;;; @dynamic
-
-(check "@dynamic delegates to @"
-  (in-ns foo
-     (with-var foo/x 'expected
-       (should (equal 'expected (@dynamic 'x))))))
-
 ;;; @set
 
 (check "@set modifies mutable vars using unqualified symbol"
