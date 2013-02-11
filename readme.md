@@ -32,16 +32,12 @@ Requires Emacs 24 or later.
 ;;; Define a new namespace.
 
 (namespace 007
-  ;; Members are private, unless explicitly exported.
   :export
   [ cover greet ]
   :import
   [ spy-training ]
-  ;; Download packages automatically from elpa and load
-  ;; Elisp files and features.
   :packages
-  [ geography
-    gnus-MI6-utils ]
+  [ geography gnus-MI6-utils ]
   :use
   [ agency.passports
     (agency.contacts.russian :when (equal (agent-location) 'Moscow)) ])
@@ -91,6 +87,7 @@ as well as conveniences to make setting up dependencies a snap.
 The best way is to download and install the `namespaces` package from melpa.
 
   1. Make sure you've configured package management in your init.el:
+
     ```lisp
     (require 'package)
 
@@ -100,7 +97,9 @@ The best way is to download and install the `namespaces` package from melpa.
     (unless package-archive-contents
       (package-refresh-contents))
     ```
+
   2. Install the `namespaces` package:
+
     ```lisp
     ;; Initialize namespaces.
     (unless (package-installed-p 'namespaces)
@@ -109,6 +108,7 @@ The best way is to download and install the `namespaces` package from melpa.
     ```
 
 Otherwise, clone this repo and add it to your load path, then:
+
 ```lisp
 (require 'namespaces)
 ```
@@ -130,6 +130,7 @@ Otherwise, clone this repo and add it to your load path, then:
 ### Defining Namespaces and Members
 
 You can define a namespace or reopen an existing one using the `namespace` macro:
+
 ```lisp
 (namespace enterprise)
 ```
@@ -164,12 +165,15 @@ Vars defined with `defmutable` cannot be changed with `@set` outside the definin
 ### Exporting and Importing Namespaced Symbols
 
 To make a namespaced symbol publicly-accessible, add it to the exports list for that namespace:
+
 ```lisp
 (namespace enterprise :export [ captain ])
 ```
+
 This makes `enterprise/captain` a public var, and generates an accessor function.
 Other namespaces can now access that symbol by invoking the accessor, or by
-adding it to their namespace imports and using `_`:
+adding it to their namespace imports and calling using `_`:
+
 ```lisp
 (namespace federation)
 (enterprise/captain)                   ; => "Picard"
@@ -177,13 +181,14 @@ adding it to their namespace imports and using `_`:
 (namespace borg :import [ enterprise ])
 (_ captain)                        ; => "Picard"
 ```
+
 These accessor functions add a nice layer of safety: if your requirements change down the
 track (eg, you need logging), you can safely reimplement an acccessor by hand without
 changing the interface and breaking client code.
 
 ## Emacs Interop
 
-Clients of your namespaced code do not need to know anything about namespaces or the `@` macros.
+Clients of your namespaced code do not need to know anything about namespaces or the macros defined in this package.
 
 The `namespace` macro declares the given namespace as an Emacs feature, as if you called `(provide 'foo)`.
 Clients can use the standard `require` and `autoload` mechanisms to access your exported functions.
@@ -191,6 +196,7 @@ Clients can use the standard `require` and `autoload` mechanisms to access your 
 ### Functions and Vars
 
 Exported functions can be called using their fully qualified name:
+
 ```lisp
 (namespace foo :export [greet])
 (defn greet () "Hello!")
@@ -200,6 +206,7 @@ Exported functions can be called using their fully qualified name:
 ```
 
 Similarly, exported vars can be read using their accessor functions:
+
 ```lisp
 (namespace foo :export [x])
 (def x 'hello)
@@ -212,8 +219,9 @@ By design, clients cannot modify exported vars with `@set`, even if they are def
 Package writers should probably use `defcustom` when they want to define a var that can be customized by clients.
 
 The `defn`, `def` and `defmutable` macros obfuscate their true symbols to prevent callers from casually
-accessing private members of a namespace. You can obtain a symbol's underlying name using the `~` macro.
+accessing private members of a namespace. You can obtain a symbol's underlying symbol using the `~` macro.
 This is allows your private members to interoperate with foreign elisp. For example:
+
 ```lisp
 (defn private () (message "TOP SECRET"))
 
@@ -223,10 +231,11 @@ This is allows your private members to interoperate with foreign elisp. For exam
 (run-hooks 'example-hook)                 ; check your *Messages* buffer
 ```
 
-### Hooks and Closures
+### Closures
 
 You can use the `lambda-` macro when you want to capture the declaring
 namespace in your hooks or exported functions:
+
 ```lisp
 (namespace foo :export [ x ])
 
@@ -237,19 +246,6 @@ namespace in your hooks or exported functions:
 (namespace bar :import [ foo ])
 (funcall (@ x))                           ; => foo-private
 ```
-
-Hook variables are treated specially. Unlike other vars, hook vars do not get accessor functions.
-Any exported var ending with `-hook` is directly accessible.
-```lisp
-(namespace foo :export [ foo-hook ])
-(def foo-hook nil)
-
-; ... in client code
-(require 'foo)
-(add-hook 'foo-hook '(lambda () (message "Hello")))
-```
-In the example above, the hook was directly accessed by the client.
-This allows your hook variables to behave just like callers would expect.
 
 ## De Res Macronis Nomenspationem
 
@@ -263,6 +259,7 @@ load emacs features and download elisp packages.
 #### :export
 
 Make the given functions or variables externally-accessible ('public').
+
 ```lisp
 (namespace foo
   :export [ x y z ... ])
@@ -271,6 +268,7 @@ Make the given functions or variables externally-accessible ('public').
 #### :import
 
 Import public symbols from another namespace:
+
 ```lisp
 (namespace foo :export [x])
 (def x "Hello")
@@ -281,10 +279,12 @@ Import public symbols from another namespace:
 
 The default behaviour is to import all public symbols. You can load a subset
 by providing a list of symbols instead:
+
 ```lisp
 (namespace baz
   :import [ (foo x y) ])
 ```
+
 The example above will import only `x` and `y` from namespace `foo`.
 
 #### :use
@@ -294,6 +294,7 @@ are interpereted as path delimiters.
 The `ns/base-path` variable is used to set the base of the namespace search path.
 
 This example will attempt to load BASE/bar/baz.el, as well as a few emacs features.
+
 ```lisp
 (namespace foo
    :use
@@ -305,6 +306,7 @@ This example will attempt to load BASE/bar/baz.el, as well as a few emacs featur
 #### :packages
 
 Download the specified elisp packages, then require or autoload them.
+
 ```lisp
 (namespace foo
   :packages [ auto-complete ])
@@ -313,6 +315,7 @@ Download the specified elisp packages, then require or autoload them.
 ### Autoloading
 
 In addition to loading elisp features, the `:packages` and `:use` arguments allow you to autoload symbols:
+
 ```lisp
  (namespace clojure-conf
    :packages
@@ -320,6 +323,7 @@ In addition to loading elisp features, the `:packages` and `:use` arguments allo
      (nrepl nrepl-mode)
      (clojure-mode (clojure-mode :interactive t)) ])
  ```
+
  In this example:
    1. paredit is *required*, meaning it is eagerly loaded
    2. `nrepl-mode` is *autoloaded* from the nrepl package, meaning it will be lazily loaded
@@ -333,6 +337,7 @@ See the Emacs documentation for `autoload` for more info.
 
 The above forms take optional `:when` or `:unless` keyword arguments to specify loading conditions.
 This can be useful in your configuration if you juggle OSes or terminals and window-systems.
+
 ```lisp
 (namespace foo
   :use [ (color-theme :when window-system) ])
@@ -346,4 +351,4 @@ by `defn`, `def` and `defmutable`. However, their fully-qualified exported forms
 The name mangling also introduces some calling indirection that makes debugging more complicated.
 If you need to do extended debugging, consider temporarily redefining your functions using `defun`.
 
-Elisp doesn't have reader macros, so there's not as much sugar as I'd like. You'll learn to love the `@` symbol!
+Elisp doesn't have reader macros, so there's not as much sugar as I'd like.

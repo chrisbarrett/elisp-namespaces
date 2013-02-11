@@ -244,12 +244,16 @@ Returns the hash and name of the sym if if it succeeds, else nil"
         (t
          hash))))
 
+(defalias '@sym '~)
+
 (defmacro in-ns (ns &rest body)
   "Dynamically rebind the current namespace to NS while evaluating BODY."
   (declare (indent 1))
   (assert (symbolp ns))
   `(let ((ns/current-ns ',ns))
      ,@body))
+
+(defalias '@using 'in-ns)
 
 (defmacro @ (symbol)
   "Evaluate SYMBOL as a var in the current namespace context."
@@ -282,6 +286,8 @@ Call that symbol's accessor function instead." sym)
             )
     `(funcall ',hash ,@args)))
 
+(defalias '@call '_)
+
 (defmacro @set (symbol value)
   "Set the value of a namespace-qualified symbol."
   (assert (symbolp symbol))
@@ -310,6 +316,8 @@ Package authors should use DEFCUSTOM for publicly mutable vars." name)
   "A lambda function that captures the surrounding namespace environment."
   (declare (indent defun))
   `(lambda ,args (in-ns ,ns/current-ns ,@body)))
+
+(defalias '@lambda 'lambda-)
 
 ;;; ================================ Definitions ===============================
 
