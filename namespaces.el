@@ -514,23 +514,28 @@ A LOAD FORM represents an item that will be autoloaded. It is either
   (assert (symbolp name))
   (assert (not (string-match-p "/" (symbol-name name))) ()
           "Invalid namespace identifier: `%s`. Forward-slashes (`/`) cannot be used." name)
+
+  ;; Set ns at macro-expansion-time.
   (setq ns/current-ns name)
 
-  `(let ((name ',name))
-     ;; Export the given symbols.
-     (mapc (lambda (x) (ns/export name x))
-           ,export)
-     ;; Import the given symbols from other namespaces.
-     (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-import x name xs)))
-           ,import)
-     ;; download and load packages.
-     (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-pkg x xs)))
-           ,packages)
-     ;; Load emacs features and files.
-     (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-use ns/base-path x xs)))
-           ,use)
+  (let ((gname (gensym)))
+    `(let ((,gname ',name))
+       ;; Export the given symbols.
+       (mapc (lambda (x) (ns/export ,gname x))
+             ,export)
+       ;; Import the given symbols from other namespaces.
+       (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-import x ,gname xs)))
+             ,import)
+       ;; download and load packages.
+       (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-pkg x xs)))
+             ,packages)
+       ;; Load emacs features and files.
+       (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-use ns/base-path x xs)))
+             ,use)
 
-     (provide name)))
+       ;; Set ns at runtime.
+       (setq ns/current-ns ,gname)
+       (provide ,gname))))
 
 ;;; ================================ Font Lock =================================
 
