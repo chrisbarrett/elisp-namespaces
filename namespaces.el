@@ -539,32 +539,31 @@ A LOAD FORM represents an item that will be autoloaded. It is either
 
 ;;; ================================ Font Lock =================================
 
-(namespace ns)
-
-(defn match-identifier-after (&rest strings)
+(defun ns/match-identifier-after (&rest strings)
   (rx-to-string `(and "("
                       (or ,@strings) (+ space)
                       (group (+ (not (any space "()[]")))))))
 
-(def match-kw    (rx "(" (group (or "defn" "def" "defmutable" "namespace" "in-ns" "lambda-")) space))
-(def match-op    (rx "(" (group (or "@" "_" "~" "@set")) space))
-(def match-fname (_ match-identifier-after "defn"))
-(def match-var   (_ match-identifier-after "def" "defmutable"))
-(def match-ns    (_ match-identifier-after "namespace" "in-ns"))
+(defconst ns/match-kw    (rx "(" (group (or "defn" "def" "defmutable"
+                                         "namespace" "in-ns" "lambda-")) space))
+(defconst ns/match-op    (rx "(" (group (or "@" "_" "~" "@set")) space))
+(defconst ns/match-fname (ns/match-identifier-after "defn"))
+(defconst ns/match-var   (ns/match-identifier-after "def" "defmutable"))
+(defconst ns/match-ns    (ns/match-identifier-after "namespace" "in-ns"))
 
-(add-hook 'emacs-lisp-mode-hook
-          (lambda- ()
-            (font-lock-add-keywords
-             nil
-             `((,(@ match-kw)    1 font-lock-keyword-face)
-               (,(@ match-op)    1 font-lock-keyword-face)
-               (,(@ match-fname) 1 font-lock-function-name-face)
-               (,(@ match-var)   1 font-lock-variable-name-face)
-               (,(@ match-ns)    1 font-lock-constant-face)))))
+(defun ns/apply-font-lock ()
+  (font-lock-add-keywords
+   nil
+   `((,ns/match-kw    1 font-lock-keyword-face)
+     (,ns/match-op    1 font-lock-keyword-face)
+     (,ns/match-fname 1 font-lock-function-name-face)
+     (,ns/match-var   1 font-lock-variable-name-face)
+     (,ns/match-ns    1 font-lock-constant-face))))
+
+(add-hook 'emacs-lisp-mode-hook 'ns/apply-font-lock)
 
 ;;; ============================================================================
 
-(namespace user)
 (provide 'namespaces)
 
 ;; Local Variables:
