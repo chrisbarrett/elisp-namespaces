@@ -2,7 +2,7 @@
 ;;
 ;; Author: Chris Barrett
 ;; URL: https://github.com/chrisbarrett/elisp-namespaces
-;; Version: 1.1.1
+;; Version: 1.1.2
 ;;
 
 ;;; License:
@@ -565,8 +565,4 @@ A LOAD FORM represents an item that will be autoloaded. It is either
 ;;; ============================================================================
 
 (provide 'namespaces)
-
-;; Local Variables:
-;; no-byte-compile: t
-;; End:
 ;;; namespaces.el ends here
