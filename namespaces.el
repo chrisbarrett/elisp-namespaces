@@ -172,7 +172,7 @@
 
 ;;; ============================== Operators ===================================
 
-(defvar ns/current-ns 'ns)
+(defvar ns/current-ns 'user)
 (make-variable-buffer-local 'ns/current-ns)
 
 (defun ns/fn-p (tpl)

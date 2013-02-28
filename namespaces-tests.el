@@ -596,6 +596,12 @@
   (namespace bar :import [ foo ])
   (should (functionp (~ x))))
 
+;;; External state
+
+(ert-deftest the-default-namespace-is-USER ()
+  (with-temp-buffer (namespace foo))
+  (with-temp-buffer
+    (should (equal 'user ns/current-ns))))
 
 ;;; ============================================================================
 
