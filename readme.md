@@ -34,7 +34,7 @@ Requires Emacs 24 or later.
 ```lisp
 ;;; Define a new namespace.
 
-(namespace 007
+(namespace agent
   :export
   [ cover greet ]
   :import
@@ -61,11 +61,11 @@ Requires Emacs 24 or later.
 ;;; Try to call in from the outside.
 
 (namespace border-guards)
-(007/cover)               ; => "David Somerset"
-(007/realname)            ; => Error: Inaccessible
+(agent/cover)               ; => "David Somerset"
+(agent/realname)            ; => Error: Inaccessible
 
-(007/identify)            ; => "Hello, I'm David Somerset"
-(007/update-cover)        ; => Error: Inaccessible
+(agent/identify)            ; => "Hello, I'm David Somerset"
+(agent/update-cover)        ; => Error: Inaccessible
 ```
 
 You can see an example of this package in action in my init.el,
