@@ -565,4 +565,9 @@ A LOAD FORM represents an item that will be autoloaded. It is either
 ;;; ============================================================================
 
 (provide 'namespaces)
+
+;; Local Variables:
+;; byte-compile-warnings: (not cl-functions)
+;; End:
+
 ;;; namespaces.el ends here
