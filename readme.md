@@ -296,8 +296,8 @@ When all else fails, you can use it to access private vars or redefine a
 
 (namespace user)
 (in-ns closed
-  (message (@ x))            ; => "immutable"
-  (defmutable x "mutable"))  ; => "mutable"
+  (defmutable x)
+  (@set x "now mutable!"))
 ```
 
 ## De Res Macronis Nomenspationem
