@@ -1,93 +1,79 @@
-# Elisp Namespaces
+# Elisp Namespaces [![Build Status](https://travis-ci.org/chrisbarrett/elisp-namespaces.png)](https://travis-ci.org/chrisbarrett/elisp-namespaces)
 
-[![Build Status](https://travis-ci.org/chrisbarrett/elisp-namespaces.png)](https://travis-ci.org/chrisbarrett/elisp-namespaces)
-
-An implementation of namespaces for Emacs Lisp, with an emphasis on
-immutabilty.  Helps you keep the global namespace clean and protect your
-symbols from clobbering.
+An implementation of namespaces for Emacs Lisp. Helps you keep the
+global namespace clean and protect your symbols from clobbering.
 
 Pull requests welcome.
 
 Requires Emacs 24 or later.
 
-## The Elevator Pitch
-
-#### Namespace members are private unless explicitly exported (*yuss!*)
-- explicit exports make your package's public interface clear
-- private symbols are obfuscated
-
-#### Declare dependencies on Elisp Features, online packages and random Elisp files in an easy and consistent way
-- drastically streamlines your init.el
-- centralised dependency declarations are easy to track
-
-#### Helps you do the Right Thing with variables
-- immutability is the default
-- automatically generates accessor functions for exported variables
-- client code can't directly access exported variables
-
-#### It's all done with macros
-- catches errors early
-- no runtime penalty!
-
-## Sample Code
+## Quick Tour
 
 ```lisp
-;;; Define a new namespace.
-
+;; Open a namespace:
 (namespace agent
-  :export
-  [ cover greet ]
-  :import
-  [ spy-training ]
-  :packages
-  [ geography gnus-MI6-utils ]
+  ;; Require and autoload some elisp features:
   :use
-  [ agency.passports
-    (agency.contacts.russian :when (equal (agent-location) 'Moscow)) ])
+  [ cl
+    gnus
+    (agent-mode   turn-on-agent-mode)
+    (spy-training plant-explosives daring-escape) ])
 
-;;; Define some vars and functions in this namespace.
+;; Create a private variable:
+(def real-name "Bond, James Bond")
 
-(def realname "Bond, James Bond.")
-(defmutable cover "David Somerset")
+;; Get the variable's value:
+(@ real-name)
+; => "Bond, James Bond"
 
+;; Create a variable you can change:
+(defmutable cover)
+
+;; Update a mutable variable:
+(@set cover "David Somerset")
+
+;; Define a private function:
 (defn identify ()
-   (concat "Hello, I'm " (@ cover) "."))
+  (concat "Hello, I'm " (@ cover) "."))
 
-(defn update-cover ()
-   "Update identity if cover is blown."
-   (@set cover (spy-training/forge-passport)))
+;; Call a private function:
+(_ identify)
+; => "Hello, I'm David Somerset"
 
+;; Quote a private symbol:
+(add-hook 'border-crossed-hook (~ identify))
 
-;;; Try to call in from the outside.
+;; Make some values public:
+(namespace agent
+  :export [cover identify])
 
-(namespace border-guards)
-(agent/cover)               ; => "David Somerset"
-(agent/realname)            ; => Error: Inaccessible
+;; --------------------------------------------------
 
-(agent/identify)            ; => "Hello, I'm David Somerset"
-(agent/update-cover)        ; => Error: Inaccessible
+;; Open another namespace:
+(namespace guards)
+
+;; You can call an exported function directly...
+(agent/identify)
+
+;; ...or import that namespace and call it with `_`:
+(namespace guards :import [agent])
+
+(_ identify)
+; => "Hello, I'm David Somerset"
+
+;; Public vars are available only through accessor functions.
+(@ agent/cover)
+; => ERROR
+(agent/cover)
+; => "David Somerset"
+
+;; Private symbols are kept private:
+(@ agent/real-name)
+; => ERROR
+(agent/real-name)
+; => ERROR
+
 ```
-
-You can see an example of this package in action in my init.el,
-available [here](https://github.com/chrisbarrett/.emacs.d/blob/master/init.el).
-
-### Why Does Emacs Need Namespaces?
-
-Elisp doesn't have namespaces, so package authors tend to use prefixes
-to separate their identifiers and avoid clobbering. For instance, if you
-have yasnippet installed you can run `M-x describe-function yas<TAB>` to
-see every function defined by that feature. This level of exposure makes
-it hard to distinguish the intended interface from volatile internal
-details.
-
-At a deeper level, a single global namespace makes elisp programming
-more annoying than it needs to be.  I *agonize* over what to name my
-utility functions, because any name I choose could get clobbered at
-runtime.  And prefixing everything by hand is so *manual*.
-
-This package provides that basic level of encapsulation using a couple
-of simple macros, as well as conveniences to make setting up
-dependencies a snap.
 
 ## Installation
 
@@ -123,19 +109,11 @@ Otherwise, clone this repo and add it to your load path, then:
 
 ### Optional Configuration
 
-1. The `namespace` macro makes it easy to load dependencies using the
-   package management features in Emacs 24+; make sure you set up all
-   that package management stuff before you call those features.
+The `namespace` macro makes it easy to load dependencies using the
+package management features in Emacs 24+; make sure you set up all that
+package management stuff before you call those features.
 
-
-2. If needed, set `ns/base-path` to the directory containing your elisp
-files. The default is `~/.emacs.d/elisp/`:
-
-   ```lisp
-   (setq ns/base-path "~/.emacs.d/lisp/")
-   ```
-
-## Basic Usage
+## Usage
 
 ### Defining Namespaces and Members
 
@@ -300,11 +278,7 @@ When all else fails, you can use it to access private vars or redefine a
   (@set x "now mutable!"))
 ```
 
-## De Res Macronis Nomenspationem
-
-The `namespace` macro is a versatile beast. It is used to import and
-export namespace symbols, load emacs features and download elisp
-packages.
+## Namespace Macro
 
 ### Keyword Arguments
 
@@ -316,8 +290,7 @@ their values.
 Make the given functions or variables externally-accessible ('public').
 
 ```lisp
-(namespace foo
-  :export [ x y z ... ])
+(namespace foo :export [ x y z ... ])
 ```
 
 #### :import
@@ -336,69 +309,49 @@ The default behaviour is to import all public symbols. You can load a
 subset by providing a list of symbols instead:
 
 ```lisp
-(namespace baz
-  :import [ (foo x y) ])
+(namespace baz :import [ (foo x y) ])
 ```
 
 The example above will import only `x` and `y` from namespace `foo`.
 
 #### :use
 
-Load another elisp file from disk or require an emacs feature. Periods
-(`.`) are interpereted as path delimiters.  The `ns/base-path` variable
-is used to set the base of the namespace search path.
-
-This example will attempt to load BASE/bar/baz.el, as well as a few
-emacs features.
+Require an emacs feature.
 
 ```lisp
-(namespace foo
-   :use
-   [ bar.baz
-     paredit
-     color-theme ])
+(namespace foo :use [cl])
+```
+
+Lists are interpreted as *autoload directives*, where the first item is
+a feature name and the remainder are functions to be autoloaded.
+
+```lisp
+(namespace foo :use [ (paredit paredit-mode) ])
 ```
 
 #### :packages
 
-Download the specified elisp packages, then require or autoload them.
+Download the specified elisp packages.
+
+You can eagerly `require` the pacakge...
 
 ```lisp
-(namespace foo
-  :packages [ auto-complete ])
+(namespace foo :packages [ auto-complete ])
 ```
 
-### Autoloading
-
-In addition to loading elisp features, the `:packages` and `:use`
-arguments allow you to autoload symbols:
-
+...or autoload a list of symbols:
 ```lisp
- (namespace clojure-conf
-   :packages
-   [ paredit
-     (nrepl nrepl-mode)
-     (clojure-mode (clojure-mode :interactive t)) ])
- ```
-
- In this example:
-   1. paredit is *required*, meaning it is eagerly loaded
-   2. `nrepl-mode` is *autoloaded* from the nrepl package, meaning it will be lazily loaded
-   3. `clojure-mode` is also autoloaded, with a nested form allowing you
-      to pass additional arguments to the underlying call to `autoload`.
-
-See the Emacs documentation for `autoload` for more info.
-
+(namespace foo :packages [ (auto-complete auto-complete-mode) ])
+```
 
 ### Conditional Loading
 
 The above forms take optional `:when` or `:unless` keyword arguments to
-specify loading conditions.  This can be useful in your configuration if
-you juggle OSes or terminals and window-systems.
+specify loading conditions.  This can be useful for environment-specific
+configuration.
 
 ```lisp
-(namespace foo
-  :use [ (color-theme :when window-system) ])
+(namespace foo :use [ (color-theme :when (display-graphic-p)) ])
 ```
 
 ## Gotchas and Limitations
@@ -406,10 +359,6 @@ you juggle OSes or terminals and window-systems.
 Due to internal name-mangling, you won't be able to use features like
 eldoc or `describe-function` on symbols defined by `defn`, `def` and
 `defmutable`. However, their fully-qualified exported forms work fine.
-
-The name mangling also introduces some calling indirection that makes
-debugging more complicated.  If you need to do extended debugging,
-consider temporarily redefining your functions using `defun`.
 
 Elisp doesn't have reader macros, so there's not as much sugar as I'd
 like.
