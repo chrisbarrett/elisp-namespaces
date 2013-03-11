@@ -287,8 +287,7 @@ Call that symbol's accessor function instead." sym)
     ;; We have to check the function is bound dynamically to prevent
     ;; byte-compile-time warnings.
     `(if (fboundp ',hash)
-         (progn (message "%s" ',hash)
-                (,hash ,@args))
+         (,hash ,@args)
        (error "`%s` is not a function. Use `@` to evaluate vars." ',sym))))
 
 (defmacro @set (symbol value)
