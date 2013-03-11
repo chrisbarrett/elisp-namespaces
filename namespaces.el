@@ -63,13 +63,11 @@
 (defconst ns/symbols-table (make-hash-table :test 'equal)
   "hash * name -> ns-meta")
 
-
 ;;; --------------------------- Symbol Processing ---------------------------------
 
 (defun ns/hash (sym)
   "Hash a symbol for insertion into lookup tables."
-  (let ((hash (secure-hash 'sha256 (symbol-name sym))))
-    (intern (concat "__ns/namespaced_sym__" hash))))
+  (intern (concat "__ns/internal_sym::" (symbol-name sym))))
 
 (defun ns/split-sym (sym)
   "Splits SYM into a tuple of (namespace * symbol)."
@@ -96,7 +94,8 @@
 ;;; --------------------------- Table Accessors -----------------------------------
 
 (defun ns/intern (ns sym)
-  "Intern the given ns/sym into the namespace table. Returns the tuple of (hash * sym) used as the key."
+  "Intern the given ns/sym into the namespace table. Returns the
+tuple of (hash * sym) used as the key."
   (let ((key (ns/make-key ns sym)))
     ;; Make sure existing metadata isn't lost.
     (unless (gethash key ns/symbols-table)
@@ -107,20 +106,23 @@
   (loop for k being the hash-keys of table collect k))
 
 (defun ns/get-symbol-name (hash)
-  "Return the interned symbol name corresponding to HASH, or nil if no such name is interned."
+  "Return the interned symbol name corresponding to HASH, or nil
+if no such name is interned."
   (let ((filtered (remove-if-not (lambda (tpl) (equal hash (car tpl)))
                                  (ns/hash-keys ns/symbols-table))))
     (cdr-safe (car-safe filtered))))
 
 (defun ns/get-symbol-hash (ns sym)
-  "Return the interned symbol hash corresponding to SYM, or nil if no such hash is interned."
+  "Return the interned symbol hash corresponding to SYM, or nil
+if no such hash is interned."
   (let* ((sym (ns/qualify ns sym))
          (filtered (remove-if-not (lambda (tpl) (equal sym (cdr tpl)))
                                   (ns/hash-keys ns/symbols-table))))
     (car-safe (car-safe filtered))))
 
 (defun ns/get-symbol-meta (ns sym)
-  "Gets the metadata for the given symbol, or nil no such symbol is interned."
+  "Gets the metadata for the given symbol, or nil if no such
+symbol is interned."
   (gethash (ns/make-key ns sym) ns/symbols-table))
 
 ;;; --------------------------- Imports/Exports -----------------------------------
@@ -141,8 +143,10 @@
 
 (defun ns/export (ns sym)
   "Make SYM publicly accessible."
+
   ;; Ensure metadata exists for SYM
   (ns/intern ns sym)
+
   (let ((tpl  (ns/make-key ns sym) )
         (meta (ns/get-symbol-meta ns sym)))
     (ns/puthash-in ns tpl tpl ns/exports-table)
@@ -151,12 +155,14 @@
 
 (defun ns/import (ns-from ns-to sym)
   "Import a symbol defined by one namespace into another."
+
   ;; Ensure SYM is publicly accessible.
   (let* ((meta    (ns/get-symbol-meta ns-from sym))
          (public? (when meta (ns-meta-public? meta))))
-    (assert public? nil
+    (assert public? ()
             "Symbol `%s` is undefined or inaccessible from namespace `%s`"
             (ns/qualify ns-from sym) ns-to))
+
   ;; Add symbol to imports for NS-TO.
   (let ((tpl (ns/make-key ns-from sym)))
     (ns/puthash-in ns-to tpl tpl ns/imports-table)
@@ -172,7 +178,9 @@
 
 ;;; ============================== Operators ===================================
 
-(defvar ns/current-ns 'user)
+(defvar ns/current-ns 'user
+  "Represents the current namespace for symbol resolution and definitions.")
+
 (make-variable-buffer-local 'ns/current-ns)
 
 (defun ns/fn-p (tpl)
@@ -192,8 +200,8 @@
 (defun ns/find-imported-sym (unqualified-sym ns)
   "Try to find the given symbol in the imports for namespace NS.
 Returns the hash and name of the sym if if it succeeds, else nil"
-  (let* ((tbl     (gethash ns ns/imports-table))
-         (tuples  (when tbl (ns/hash-keys tbl)))
+  (let* ((table   (gethash ns ns/imports-table))
+         (tuples  (when table (ns/hash-keys table)))
          (match-p (lambda (tpl)
                     (let* ((name (cdr tpl))
                            (sym  (cdr (ns/split-sym name))))
@@ -213,9 +221,13 @@ Returns the hash and name of the sym if if it succeeds, else nil"
      ;; Resolve from this namespace, shadowing imports.
      (when (and hash (equal ns/current-ns ns))
        (ns/make-key ns name))
+
      ;; Find imports or public syms.
      (ns/find-imported-sym sym ns/current-ns)
-     (ns/find-public-sym ns name))))
+     (ns/find-public-sym ns name)
+
+     ;; If the symbol isn't defined, assume it's in this namespace.
+     (ns/make-key ns/current-ns name))))
 
 ;;; ----------------------------------------------------------------------------
 
@@ -237,16 +249,12 @@ Returns the hash and name of the sym if if it succeeds, else nil"
            name
          hash)))
 
-(defalias '@sym '~)
-
 (defmacro in-ns (ns &rest body)
   "Dynamically rebind the current namespace to NS while evaluating BODY."
   (declare (indent 1))
   (assert (symbolp ns))
   `(let ((ns/current-ns ',ns))
      ,@body))
-
-(defalias '@using 'in-ns)
 
 (defmacro @ (symbol)
   "Evaluate SYMBOL as a var in the current namespace context."
@@ -255,12 +263,15 @@ Returns the hash and name of the sym if if it succeeds, else nil"
          (hash (car-safe tpl))
          (sym  (cdr-safe tpl))
          (ns   (when sym (car (ns/split-sym sym)))))
+
     (assert hash ()
             "Symbol `%s` is undefined or inaccessible from namespace `%s`."
             symbol ns/current-ns)
+
     (assert (equal ns ns/current-ns) ()
             "Invalid use of `@`. `%s` is in another namespace.
 Call that symbol's accessor function instead." sym)
+
     hash))
 
 (defmacro _ (fn &rest args)
@@ -268,18 +279,17 @@ Call that symbol's accessor function instead." sym)
   (assert (symbolp fn))
   (let* ((tpl  (ns/resolve fn))
          (hash (car-safe tpl))
-         (sym  (cdr-safe tpl))
-         )
+         (sym  (cdr-safe tpl)))
     (assert hash ()
             "Function `%s` is undefined or inaccessible from namespace `%s`."
-            fn ns/current-ns
-            )
-    (assert (functionp hash) ()
-            "`%s` is not a function. Use `@` to evaluate vars." sym
-            )
-    `(funcall ',hash ,@args)))
+            fn ns/current-ns)
 
-(defalias '@call '_)
+    ;; We have to check the function is bound dynamically to prevent
+    ;; byte-compile-time warnings.
+    `(if (fboundp ',hash)
+         (progn (message "%s" ',hash)
+                (,hash ,@args))
+       (error "`%s` is not a function. Use `@` to evaluate vars." ',sym))))
 
 (defmacro @set (symbol value)
   "Set the value of a namespace-qualified symbol."
@@ -296,9 +306,10 @@ Call that symbol's accessor function instead." sym)
                )
           (assert (ns-meta-mutable? meta) ()
                   "Invalid use of `@set`. `%s` is immutable." name)
+
           (assert (equal ns ns/current-ns) ()
-                  "Invalid use of `@set`. `%s` is in another namespace.
-Package authors should use DEFCUSTOM for publicly mutable vars." name)
+                  "Invalid use of `@set`. `%s` is in another namespace." name)
+
           `(setq ,hash ,value))
 
       ;; Could not resolve SYMBOL.
@@ -310,7 +321,10 @@ Package authors should use DEFCUSTOM for publicly mutable vars." name)
   (declare (indent defun))
   `(lambda ,args (in-ns ,ns/current-ns ,@body)))
 
-(defalias '@lambda 'lambda-)
+(define-obsolete-function-alias '@sym '~ "1.1.2")
+(define-obsolete-function-alias '@using 'in-ns "1.1.2")
+(define-obsolete-function-alias '@call '_ "1.1.2")
+(define-obsolete-function-alias '@lambda 'lambda- "1.1.2")
 
 ;;; ================================ Definitions ===============================
 
@@ -333,19 +347,21 @@ Package authors should use DEFCUSTOM for publicly mutable vars." name)
   "Define a namespace-qualified function.
 If BODY contains a call to (interactive), this will expand to `defun`. Otherwise, `defun*` is used."
   (declare (indent defun))
+
   (let* (
          (tpl   (ns/intern ns/current-ns name))
          (hash  (car tpl))
          (qual  (cdr tpl))
          (body  body)
          (doc   docstring)
-         ;; Tolerate body forms in the `docstring` position.
-         (forms (cond
-                 ((and (stringp doc) body) (list* doc nil body))
-                 (body (list* nil doc body))
-                 (t (list nil doc))))
-         ;; Extract parts.
-         (docstring    (or (first forms) ""))
+
+         ;; Handle body forms in the `docstring` position.
+         (forms (cond ((and (stringp doc) body) (list* doc nil body))
+                      (body (list* nil doc body))
+                      (t (list nil doc))))
+         (docstring (or (first forms) ""))
+
+         ;; Use DEFUN if the body contains INTERACTIVE, else use DEFUN*
          (interactive? (lambda (s) (equalp (car-safe s) 'interactive)))
          (interactive  (find-if interactive? forms))
          (body         (remove-if interactive? (rest forms)))
