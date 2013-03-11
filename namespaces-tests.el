@@ -550,11 +550,23 @@
 
 ;;; Exported Vars
 
-(check "must use accessor function to access public var"
+(check "cannot resolve underlying var from another namespace"
   (namespace foo :export [ public ])
   (def public 'fail)
   (gen-namespace :import [ foo ] )
   (should-error (eval `(@ foo/public))))
+
+(check "can resolve imported accessor fn with qualified symbol"
+  (namespace foo :export [ public ])
+  (def public 'expected)
+  (gen-namespace :import [ foo ] )
+  (should (equal 'expected (_ foo/public))))
+
+(check "can resolve imported accessor fn with unqualified symbol"
+  (namespace foo :export [ public ])
+  (def public 'expected)
+  (gen-namespace :import [ foo ] )
+  (should (equal 'expected (_ public))))
 
 (check "cannot set public var from another namespace"
   (namespace foo :export [ public ])
