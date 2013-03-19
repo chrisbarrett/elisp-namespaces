@@ -2,7 +2,7 @@
 ;;
 ;; Author: Chris Barrett
 ;; URL: https://github.com/chrisbarrett/elisp-namespaces
-;; Version: 1.1.3
+;; Version: 1.2
 ;;
 
 ;;; License:
@@ -46,28 +46,29 @@
 
 ;;; Code:
 
-(defcustom ns/base-path (concat user-emacs-directory "elisp/")
-  "Defines the base directory for namespace resolution."
-  :group 'namespaces)
-
-;;; ================================ Core ======================================
-
-(require 'cl)
+(require 'cl-lib)
 (autoload 'package-installed-p "package")
 (autoload 'package-install "package")
 
-(defstruct ns-meta
+;;; ================================ Core ======================================
+
+(cl-defstruct ns-meta
   public?
   mutable?)
 
+(cl-defstruct ns-symbol
+  name
+  hash
+  ns)
+
 (defconst ns/symbols-table (make-hash-table :test 'equal)
-  "hash * name -> ns-meta")
+  "ns-symbol -> ns-meta")
 
 ;;; --------------------------- Symbol Processing ---------------------------------
 
-(defun ns/hash (sym)
+(defun ns/hash (ns name)
   "Hash a symbol for insertion into lookup tables."
-  (intern (concat "__ns/internal_sym::" (symbol-name sym))))
+  (intern (format "%s--internal-%s" ns name)))
 
 (defun ns/split-sym (sym)
   "Splits SYM into a tuple of (namespace * symbol)."
@@ -87,15 +88,17 @@
 
 (defun ns/make-key (ns sym)
   "Make a key for the symbols table."
-  (let* ((sym  (ns/qualify ns sym))
-         (hash (ns/hash sym)))
-    `(,hash . ,sym)))
+  (let ((qual (ns/qualify ns sym))
+        (name (cdr (ns/split-sym sym))))
+    (make-ns-symbol :name qual
+                    :hash (ns/hash ns name)
+                    :ns ns)))
 
 ;;; --------------------------- Table Accessors -----------------------------------
 
 (defun ns/intern (ns sym)
   "Intern the given ns/sym into the namespace table. Returns the
-tuple of (hash * sym) used as the key."
+`ns-symbol' used as the key."
   (let ((key (ns/make-key ns sym)))
     ;; Make sure existing metadata isn't lost.
     (unless (gethash key ns/symbols-table)
@@ -103,35 +106,42 @@ tuple of (hash * sym) used as the key."
     key))
 
 (defun ns/hash-keys (table)
-  (loop for k being the hash-keys of table collect k))
+  (cl-loop for k being the hash-keys of table collect k))
 
 (defun ns/get-symbol-name (hash)
   "Return the interned symbol name corresponding to HASH, or nil
 if no such name is interned."
-  (let ((filtered (remove-if-not (lambda (tpl) (equal hash (car tpl)))
-                                 (ns/hash-keys ns/symbols-table))))
-    (cdr-safe (car-safe filtered))))
+  (let ((nsym (cl-find-if (lambda (x) (equal hash (ns-symbol-hash x)))
+                          (ns/hash-keys ns/symbols-table))))
+    (when nsym (ns-symbol-name nsym))))
 
 (defun ns/get-symbol-hash (ns sym)
   "Return the interned symbol hash corresponding to SYM, or nil
 if no such hash is interned."
-  (let* ((sym (ns/qualify ns sym))
-         (filtered (remove-if-not (lambda (tpl) (equal sym (cdr tpl)))
-                                  (ns/hash-keys ns/symbols-table))))
-    (car-safe (car-safe filtered))))
+  (let* ((qual (ns/qualify ns sym))
+         (nsym (cl-find-if (lambda (x) (equal qual (ns-symbol-name x)))
+                           (ns/hash-keys ns/symbols-table))))
+    (when nsym (ns-symbol-hash nsym))))
 
 (defun ns/get-symbol-meta (ns sym)
   "Gets the metadata for the given symbol, or nil if no such
 symbol is interned."
   (gethash (ns/make-key ns sym) ns/symbols-table))
 
+(defun ns/get-ns-symbol-meta (nsym)
+  "Gets the metadata for the given symbol, or nil if no such
+symbol is interned."
+  (gethash nsym ns/symbols-table))
+
 ;;; --------------------------- Imports/Exports -----------------------------------
 
 (defconst ns/imports-table (make-hash-table)
-  "ns -> (hash * name) -> (hash * name)")
+  "A hashtable of hashtables, mapping namespaces to their imports.
+ns -> (ns-symbol -> ns-symbol)")
 
 (defconst ns/exports-table (make-hash-table)
-  "ns -> (hash * name) -> (hash * name)")
+  "A hashtable of hashtables, mapping namespaces to their exports.
+ns -> (ns-symbol -> ns-symbol)")
 
 (defun ns/puthash-in (outer-key inner-key inner-value table)
   "Insert a value into a nested hash-table, creating the outer table if needed."
@@ -147,11 +157,11 @@ symbol is interned."
   ;; Ensure metadata exists for SYM
   (ns/intern ns sym)
 
-  (let ((tpl  (ns/make-key ns sym) )
+  (let ((nsym  (ns/make-key ns sym))
         (meta (ns/get-symbol-meta ns sym)))
-    (ns/puthash-in ns tpl tpl ns/exports-table)
+    (ns/puthash-in ns nsym nsym ns/exports-table)
     (setf (ns-meta-public? meta) t)
-    tpl))
+    nsym))
 
 (defun ns/import (ns-from ns-to sym)
   "Import a symbol defined by one namespace into another."
@@ -159,21 +169,21 @@ symbol is interned."
   ;; Ensure SYM is publicly accessible.
   (let* ((meta    (ns/get-symbol-meta ns-from sym))
          (public? (when meta (ns-meta-public? meta))))
-    (assert public? ()
-            "Symbol `%s` is undefined or inaccessible from namespace `%s`"
-            (ns/qualify ns-from sym) ns-to))
+    (cl-assert public? ()
+               "Symbol `%s` is not public or is undefined."
+               (ns/qualify ns-from sym)))
 
   ;; Add symbol to imports for NS-TO.
-  (let ((tpl (ns/make-key ns-from sym)))
-    (ns/puthash-in ns-to tpl tpl ns/imports-table)
-    tpl))
+  (let ((nsym (ns/make-key ns-from sym)))
+    (ns/puthash-in ns-to nsym nsym ns/imports-table)
+    nsym))
 
 (defun ns/import-all (from-ns into-ns)
   "Import all public symbols from one namespace into another."
   (let ((tbl (gethash from-ns ns/exports-table)))
     (when tbl
-      (mapcar (lambda (tpl)
-                (ns/import from-ns into-ns (cdr tpl)))
+      (mapcar (lambda (nsym)
+                (ns/import from-ns into-ns (ns-symbol-name nsym)))
               (ns/hash-keys tbl)))))
 
 ;;; ============================== Operators ===================================
@@ -183,147 +193,137 @@ symbol is interned."
 
 (make-variable-buffer-local 'ns/current-ns)
 
-(defun ns/fn-p (tpl)
-  "Returns true if the given (hash * name) tuple resolves to a function."
-  (or (functionp (car tpl))
-      (functionp (cdr tpl))))
+(defun ns/fn-p (nsym)
+  "Returns true if the given ns-symbol resolves to a function."
+  (or (functionp (ns-symbol-name nsym))
+      (functionp (ns-symbol-hash nsym))))
 
-(defun ns/find-public-sym (ns sym)
-  "Gets the hash and name of a symbol if it is public, else nil."
-  (let ((tpl (ns/make-key ns sym))
-        (meta  (ns/get-symbol-meta ns sym)))
-    (when (and meta
-               (ns-meta-public? meta)
-               (ns/fn-p tpl))
-      tpl)))
+(defun ns/defined-local-p (ns hash)
+  "Returns true if HASH is a defined symbol in namespace NS."
+  (and (equal ns ns/current-ns) hash (boundp hash)))
 
-(defun ns/find-imported-sym (unqualified-sym ns)
+(defun ns/find-imported-sym (ns unqualified-sym)
   "Try to find the given symbol in the imports for namespace NS.
 Returns the hash and name of the sym if if it succeeds, else nil"
   (let* ((table   (gethash ns ns/imports-table))
-         (tuples  (when table (ns/hash-keys table)))
-         (match-p (lambda (tpl)
-                    (let* ((name (cdr tpl))
-                           (sym  (cdr (ns/split-sym name))))
-                      (and (equal sym unqualified-sym)
-                           (ns/fn-p tpl))))))
-    (car-safe
-     (when tuples
-       (remove-if-not match-p tuples)))))
+         (symbols (when table (ns/hash-keys table))))
+    (cl-find-if (lambda (nsym)
+                  (let ((name (ns-symbol-name nsym)))
+                    (and (ns/fn-p nsym)
+                         (equal unqualified-sym (cdr (ns/split-sym name)))
+                         name)))
+                symbols)))
 
 (defun ns/resolve (sym)
   "Returns the hash for the given symbol, or nil if resolution fails"
-  (let* ((tpl   (ns/split-sym sym))
-         (ns    (or (car tpl) ns/current-ns))
-         (name  (cdr tpl))
-         (hash  (ns/get-symbol-hash ns name)))
+  (let* ((tpl  (ns/split-sym sym))
+         (ns   (or (car tpl) ns/current-ns))
+         (name (cdr tpl))
+         (hash (ns/get-symbol-hash ns name)))
     (or
      ;; Resolve from this namespace, shadowing imports.
-     (when (and hash (equal ns/current-ns ns))
+     (when (ns/defined-local-p ns hash)
        (ns/make-key ns name))
 
-     ;; Find imports or public syms.
-     (ns/find-imported-sym sym ns/current-ns)
-     (ns/find-public-sym ns name)
+     ;; Resolve from imports.
+     (ns/find-imported-sym ns/current-ns sym)
 
-     ;; If the symbol isn't defined, assume it's in this namespace.
-     (ns/make-key ns/current-ns name))))
+     ;; Use the supplied form.
+     (ns/make-key ns name))))
 
 ;;; ----------------------------------------------------------------------------
 
 (defmacro ~ (symbol)
   "Return the hashed name of SYM."
-  (assert (symbolp symbol))
-  (let* ((tpl  (ns/resolve symbol))
-         (hash (car-safe tpl))
-         (name (cdr-safe tpl))
-         (ns   (car-safe (ns/split-sym name))))
-    (assert tpl ()
-            "Symbol `%s` is undefined or inaccessible from namespace `%s`."
-            symbol ns/current-ns)
+  (cl-assert (symbolp symbol))
+  (let* ((nsym (ns/resolve symbol))
+         (name (ns-symbol-name nsym))
+         (ns   (car (ns/split-sym name))))
 
     ;; Return names of public functions and var accessors.
     ;; In all other cases, return the hash.
     `',(if (and (not (equal ns ns/current-ns))
                 (functionp name))
            name
-         hash)))
+         (ns-symbol-hash nsym))))
 
 (defmacro in-ns (ns &rest body)
   "Dynamically rebind the current namespace to NS while evaluating BODY."
   (declare (indent 1))
-  (assert (symbolp ns))
+  (cl-assert (symbolp ns))
   `(let ((ns/current-ns ',ns))
-     ,@body))
+     (eval '(progn ,@body))))
 
 (defmacro @ (symbol)
   "Evaluate SYMBOL as a var in the current namespace context."
-  (assert (symbolp symbol))
-  (let* ((tpl  (ns/resolve symbol))
-         (hash (car-safe tpl))
-         (sym  (cdr-safe tpl))
+  (cl-assert (symbolp symbol))
+  (let* ((nsym (ns/resolve symbol))
+         (hash (ns-symbol-hash nsym))
+         (sym  (ns-symbol-name nsym))
          (ns   (when sym (car (ns/split-sym sym)))))
 
-    (assert hash ()
-            "Symbol `%s` is undefined or inaccessible from namespace `%s`."
-            symbol ns/current-ns)
+    `(progn
 
-    (assert (equal ns ns/current-ns) ()
-            "Invalid use of `@`. `%s` is in another namespace.
-Call that symbol's accessor function instead." sym)
+       (cl-assert ,hash ()
+                  "Symbol `%s' is undefined or inaccessible from namespace `%s`."
+                  ,symbol ns/current-ns)
 
-    hash))
+       (cl-assert (equal ',ns ns/current-ns) ()
+                  "Invalid use of `@`. `%s' is in another namespace.
+Call that symbol's accessor function instead." ,sym)
+
+       ,hash)))
 
 (defmacro _ (fn &rest args)
   "Apply the given namespace-qualified function."
-  (assert (symbolp fn))
-  (let* ((tpl  (ns/resolve fn))
-         (hash (car-safe tpl))
-         (sym  (cdr-safe tpl)))
-    (assert hash ()
-            "Function `%s` is undefined or inaccessible from namespace `%s`."
-            fn ns/current-ns)
+  (cl-assert (symbolp fn))
+  (let* ((nsym (ns/resolve fn))
+         (hash (ns-symbol-hash nsym))
+         (sym  (ns-symbol-name nsym))
+         (meta (ns/get-ns-symbol-meta nsym)))
 
-    ;; We have to check the function is bound dynamically to prevent
-    ;; byte-compile-time warnings.
-    `(if (fboundp ',hash)
-         (,hash ,@args)
-       (error "`%s` is not a function. Use `@` to evaluate vars." ',sym))))
+    ;; Dynamically resolve function.
+    `(cond
+      ((fboundp ',sym)  (,sym  ,@args))
+      ((and (fboundp ',hash) (equal (ns-symbol-ns ,nsym) ns/current-ns)) (,hash ,@args))
+      ((and (fboundp ',hash) (ns-meta-public? ,meta)) (,hash ,@args))
+      ((boundp  ',hash) (error "`%s' is a var, not a function." ',sym))
+      (t                (error "The function `%s' is not defined." ',sym)))))
 
 (defmacro @set (symbol value)
   "Set the value of a namespace-qualified symbol."
-  (assert (symbolp symbol))
+  (cl-assert (symbolp symbol))
 
-  (let* ((tpl  (ns/resolve symbol))
-         (hash (car-safe tpl))
-         (name (cdr-safe tpl)))
-    (if tpl
-        (let* ((tpl  (ns/split-sym name))
-               (ns   (car-safe tpl))
-               (sym  (cdr-safe tpl))
-               (meta (ns/get-symbol-meta ns sym))
-               )
-          (assert (ns-meta-mutable? meta) ()
-                  "Invalid use of `@set`. `%s` is immutable." name)
+  (let* ((nsym (ns/resolve symbol))
+         (hash (ns-symbol-hash nsym))
+         (name (ns/split-sym (ns-symbol-name nsym)))
+         (ns   (car name))
+         (sym  (cdr name))
+         (meta (ns/get-symbol-meta ns sym)))
 
-          (assert (equal ns ns/current-ns) ()
-                  "Invalid use of `@set`. `%s` is in another namespace." name)
+    ;; Ensure the value mutable, then set value. We must do this
+    ;; dynamically because the var could be redefined as mutable at runtime.
+    `(progn
+       (cl-assert (ns-meta-mutable? ,meta) ()
+                  "Invalid use of `@set`. `%s` is immutable." ,sym)
 
-          `(setq ,hash ,value))
+       (cl-assert (equal ',ns ns/current-ns) ()
+                  "Invalid use of `@set`. `%s` is in another namespace." ,sym)
 
-      ;; Could not resolve SYMBOL.
-      (error "Variable `%s` is undefined or inaccessible from namespace `%s`."
-             symbol ns/current-ns))))
+       (setq ,hash ,value))))
 
 (defmacro lambda- (args &rest body)
-  "A lambda function that captures the surrounding namespace environment."
+  "A `lambda' function that captures the surrounding namespace environment."
   (declare (indent defun))
   `(lambda ,args (in-ns ,ns/current-ns ,@body)))
 
-(define-obsolete-function-alias '@sym '~ "1.1.2")
-(define-obsolete-function-alias '@using 'in-ns "1.1.2")
-(define-obsolete-function-alias '@call '_ "1.1.2")
-(define-obsolete-function-alias '@lambda 'lambda- "1.1.2")
+(defmacro @eval-after-load (feature &rest body)
+  "A version of `eval-after-load' that captures the declaring namespace in BODY."
+  (declare (indent defun))
+
+  `(eval-after-load ,feature
+     '(in-ns ,ns/current-ns
+        ,@body)))
 
 ;;; ================================ Definitions ===============================
 
@@ -333,9 +333,9 @@ Call that symbol's accessor function instead." sym)
 (defmacro ns/defaccessor (sym docstring)
   "Make a default accessor function for a public var."
   (let* ((name (ns/qualify ns/current-ns sym))
-         (doc  (or docstring
-                   (format "Auto-generated getter for %s" name)))
+         (doc  (or docstring (format "Auto-generated getter for %s" name)))
          (hash (ns/get-symbol-hash ns/current-ns sym)))
+
     `(defun ,name ()
        ,doc
        ,hash)))
@@ -344,53 +344,62 @@ Call that symbol's accessor function instead." sym)
 
 (defmacro defn (name arglist &optional docstring &rest body)
   "Define a namespace-qualified function.
-If BODY contains a call to (interactive), this will expand to `defun`. Otherwise, `defun*` is used."
+If BODY contains a call to (interactive), this will expand to
+`defun'. Otherwise it will expand to `cl-defun', permitting a
+Common Lisp-style arglist."
   (declare (indent defun))
+  (cl-assert (symbolp name))
+  (cl-assert (listp arglist))
 
-  (let* (
-         (tpl   (ns/intern ns/current-ns name))
-         (hash  (car tpl))
-         (qual  (cdr tpl))
-         (body  body)
-         (doc   docstring)
+  (let* ((nsym (ns/intern ns/current-ns name))
+         (hash (ns-symbol-hash nsym))
+         (qual (ns-symbol-name nsym))
+         (body body)
+         (doc  docstring)
 
          ;; Handle body forms in the `docstring` position.
-         (forms (cond ((and (stringp doc) body) (list* doc nil body))
-                      (body (list* nil doc body))
-                      (t (list nil doc))))
-         (docstring (or (first forms) ""))
+         (forms (cond ((and (stringp doc) body) (cl-list* doc nil body))
+                      (body                     (cl-list* nil doc body))
+                      (t                        (list nil doc))))
+         (docstring (or (car forms) ""))
 
-         ;; Use DEFUN if the body contains INTERACTIVE, else use DEFUN*
-         (interactive? (lambda (s) (equalp (car-safe s) 'interactive)))
-         (interactive  (find-if interactive? forms))
-         (body         (remove-if interactive? (rest forms)))
-         (defun-form   (if interactive 'defun 'defun*))
-         )
+         ;; Use DEFUN if the body contains INTERACTIVE, else use CL-DEFUN.
+         (interactive? (lambda (s) (equal (car-safe s) 'interactive)))
+         (interactive  (cl-find-if interactive? forms))
+         (body         (cl-remove-if interactive? (cdr forms)))
+         (defun-form   (if interactive 'defun 'cl-defun)))
+
     `(progn
+       ;; Define the function.
        (,defun-form ,hash ,arglist
          ,docstring
          ,interactive
          (in-ns ,ns/current-ns ,@body))
 
+       ;; 'Export' this function by creating an alias to the mangled name.
        ,(when (ns/exported-p qual)
           `(defalias ',qual ',hash))
 
        ',qual)))
 
 (defmacro def (symbol value &optional docstring)
-  "Define SYMBOL as an immutable var in the current namespace. Otherwise identical to `defconst`."
-  (assert (symbolp symbol))
-  (let* ((tpl  (ns/intern ns/current-ns symbol))
-         (hash (car tpl))
-         (name (cdr tpl))
-         (qual (ns/qualify ns/current-ns name))
-         )
+  "Define SYMBOL as an immutable var in the current
+namespace. Otherwise identical to `defconst'."
+  (cl-assert (symbolp symbol))
+  (let* ((nsym (ns/intern ns/current-ns symbol))
+         (hash (ns-symbol-hash nsym))
+         (name (ns-symbol-name nsym))
+         (qual (ns/qualify ns/current-ns name)))
+
     ;; Ensure this is now an immutable var.
     (setf (ns-meta-mutable? (ns/get-symbol-meta ns/current-ns symbol)) nil)
 
     `(progn
+       ;; Declare the variable.
        (defconst ,hash ,value ,docstring)
 
+       ;; Export the var by creating an accessor function (unless one
+       ;; already exists).
        ,(when (and (ns/exported-p qual)
                    (not (fboundp qual)))
           `(ns/defaccessor ,qual ,docstring))
@@ -398,19 +407,23 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
        ',name)))
 
 (defmacro defmutable (symbol &optional value docstring)
-  "Define SYMBOL as a mutable var in the current namespace. Otherwise identical to `defvar`."
-  (assert (symbolp symbol))
-  (let* ((tpl  (ns/intern ns/current-ns symbol))
-         (hash (car tpl))
-         (name (cdr tpl))
-         (qual (ns/qualify ns/current-ns name))
-         )
+  "Define SYMBOL as a mutable var in the current
+namespace. Otherwise identical to `defvar`."
+  (cl-assert (symbolp symbol))
+  (let* ((nsym (ns/intern ns/current-ns symbol))
+         (hash (ns-symbol-hash nsym))
+         (name (ns-symbol-name nsym))
+         (qual (ns/qualify ns/current-ns name)))
+
     ;; Ensure this is now a mutable var.
     (setf (ns-meta-mutable? (ns/get-symbol-meta ns/current-ns symbol)) t)
 
     `(progn
+       ;; Declare the variable.
        (defvar ,hash ,value ,docstring)
 
+       ;; Export the var by creating an accessor function (unless one
+       ;; already exists).
        ,(when (and (ns/exported-p qual)
                    (not (fboundp qual)))
           `(ns/defaccessor ,qual ,docstring))
@@ -419,11 +432,11 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
 
 ;;; ================================ Namespace =================================
 
-(defun* ns/delete-nth (nth xs &key (count 1))
-  (delete-if (lambda (x) t) xs :start nth :count count))
+(cl-defun ns/delete-nth (nth xs &key (count 1))
+  (cl-delete-if (lambda (_) t) xs :start nth :count count))
 
 (defun ns/delete-keyword-and-arg (key xs)
-  (let ((pos (position key xs)))
+  (let ((pos (cl-position key xs)))
     (if pos
         (ns/delete-nth pos xs :count 2)
       xs)))
@@ -432,125 +445,130 @@ If BODY contains a call to (interactive), this will expand to `defun`. Otherwise
   "Calls HANDLER to load the dependency form, provided the :when and :unless keywords do not override this."
   (declare (indent 1))
   `(lambda (dep)
-     (destructuring-bind
+     (cl-destructuring-bind
          (sym &rest autos &key (when t) (unless nil) &allow-other-keys)
          (if (sequencep dep) dep (list dep))
-       (let* (
-              (w     (if (symbolp when) when (eval when)))
+
+       (let* ((w     (if (symbolp when)   when   (eval when)))
               (u     (if (symbolp unless) unless (eval unless)))
               (autos (ns/delete-keyword-and-arg :when autos))
-              (autos (ns/delete-keyword-and-arg :unless autos))
-              )
+              (autos (ns/delete-keyword-and-arg :unless autos)))
+
          (when (and w (not u))
-           (funcall ,handler sym autos))))))
+           (,handler sym autos))))))
 
 (defun ns/handle-import (from-ns into-ns deps)
   "Load dependencies. If DEPS is empty, load all symbols exported by FROM-NS."
   (if deps
-      (loop for sym in deps do (ns/import from-ns into-ns sym))
+      (cl-loop for sym in deps do (ns/import from-ns into-ns sym))
     (ns/import-all from-ns into-ns)))
 
 (defun ns/autoload-dep (feature dep)
   "Autoload symbols from FEATURE, where DEP is a list of symbols to autoload."
   (let ((feat (or (when (stringp feature) feature)
-                  (symbol-file feature) (symbol-name feature))))
+                  (symbol-file feature)
+                  (symbol-name feature))))
     (if (symbolp dep)
         (autoload dep feat)
-      (destructuring-bind (symbol &key docstring interactive type
-                                  &allow-other-keys)
-          dep
+      (cl-destructuring-bind (symbol &key docstring interactive type
+                                     &allow-other-keys) dep
         (autoload symbol feat docstring interactive type)))))
 
-(defun ns/join-dirs (&rest directories)
-  (reduce (lambda (l r) (file-name-as-directory (concat l r)))
-          directories))
-
-(defun ns/ns->file (base ns)
-  "Return a relative filepath for a given namespace."
-  (let* ((xs   (split-string (symbol-name ns) "[.]"))
-         (path (apply #'ns/join-dirs base xs))
-         (path (substring path 0 -1)))
-    (when xs
-      (concat path ".el"))))
-
-(defun ns/handle-use (base feature autoloads)
+(defun ns/handle-use (feature autoloads)
   "Autoload the specified symbols from namespace or feature FEATURE."
-  (let* ((path (ns/ns->file base feature))
-         (file (when (file-exists-p path) path)))
-    (cond
-     (autoloads
-      (loop for dep in autoloads collect (ns/autoload-dep (or file feature) dep)))
-     (file
-      (load file))
-     (t
-      (require feature)))))
+  (if autoloads
+      (cl-loop for dep in autoloads do (ns/autoload-dep feature dep))
+    (require feature)))
 
 (defun ns/handle-pkg (pkg autoloads)
   "Require a package from an online repository, downloading it if needed."
   (unless (package-installed-p pkg)
     (package-install pkg))
   (if autoloads
-      (loop for dep in autoloads collect (ns/autoload-dep pkg dep))
+      (cl-loop for dep in autoloads collect (ns/autoload-dep pkg dep))
     (require pkg)))
 
 ;;; ----------------------------------------------------------------------------
 
-(defmacro* namespace (name &key import export use packages)
+(cl-defmacro namespace (name &key import export use packages)
   "Define or reopen an existing namespace.
-The keyword agruments allow you to define exports, imports and dependencies on Emacs features and online packages.
+The keyword agruments allow you to define exports, imports and
+dependencies on Emacs features and online packages.
 
-NAME should be a symbol used to identify the namespace and qualify its members.
+NAME should be a symbol used to identify the namespace and
+qualify its members.
 
 OPTIONAL KEYWORD ARGUMENTS
 --------------------------
 
-IMPORT is a vector of the form [ dep ... ], where each `dep` is either:
-  1. a namespace whose members will be all be imported
-  2. a list of the form (ns & syms ... ), where `ns` is a namespace identifier and each sym is a member to import.
+IMPORT is a vector of the form [ dep ... ], where each `dep` is
+  either:
 
-EXPORT is a vector of the form [ sym ... ], where each `sym` is a symbol to make publicly accessible.
+1. a namespace whose members will be all be imported
 
-PACKAGES is a vector of the form [ dep ... ], where each `dep` is either:
+2. a list of the form (ns & syms ... ), where `ns` is a namespace
+  identifier and each sym is a member to import.
+
+EXPORT is a vector of the form [ sym ... ], where each `sym` is a
+symbol to make publicly accessible.
+
+PACKAGES is a vector of the form [ dep ... ], where each `dep` is
+either:
+
   1. a package to be downloaded and loaded
-  2. a list of the form (pkg & load ... ), where `pkg` is the package name and each `load` is a LOAD FORM as described later.
+
+  2. a list of the form (pkg & load ... ), where `pkg` is the
+  package name and each `load` is a LOAD FORM as described later.
 
 USE is a vector of the form [ dep ... ], where each `dep` is either:
-  1. an elisp file or namespace to load, where periods are taken as path delimeters
-  2. an emacs feature to require
-  3. a list of the form (feature & load ... ) where `feature` is an Emacs feature and each `load` is a LOAD FORM, described below.
+
+  1. an emacs feature to require
+
+  2. a list of the form (feature & load ... ) where `feature` is
+  an Emacs feature and each `load` is a LOAD FORM, described
+  below.
 
 AUTOLOADING
 -----------
-A LOAD FORM represents an item that will be autoloaded. It is either
-  1. a symbol
-  2. a list of the form (sym &key interactive type docstring) that will be passed to the Emacs autoload function. See the documentation for AUTOLOAD for an explanation of these symbols.
+A LOAD FORM represents an item that will
+be autoloaded. It is either
+
+1. a symbol
+
+2. a list of the form (sym &key interactive type docstring) that
+will be passed to the Emacs autoload function. See the
+documentation for `autoload' for an explanation of these symbols.
 "
   (declare (indent 1))
-  (assert (symbolp name))
-  (assert (not (string-match-p "/" (symbol-name name))) ()
-          "Invalid namespace identifier: `%s`. Forward-slashes (`/`) cannot be used." name)
+  (cl-assert (symbolp name))
+  (cl-assert (not (string-match-p "/" (symbol-name name))) ()
+             "Invalid namespace identifier: `%s`. Forward-slashes (`/`) cannot be used." name)
 
   ;; Set ns at macro-expansion-time.
   (setq ns/current-ns name)
 
-  (let ((gname (gensym)))
-    `(let ((,gname ',name))
+  (let ((ns (cl-gensym)))
+    `(let ((,ns ',name))
+
        ;; Export the given symbols.
-       (mapc (lambda (x) (ns/export ,gname x))
+       (mapc (lambda (x) (ns/export ,ns x))
              ,export)
+
        ;; Import the given symbols from other namespaces.
-       (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-import x ,gname xs)))
+       (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-import x ,ns xs)))
              ,import)
+
        ;; download and load packages.
        (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-pkg x xs)))
              ,packages)
+
        ;; Load emacs features and files.
-       (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-use ns/base-path x xs)))
+       (mapc (ns/destructure-dep (lambda (x xs) (ns/handle-use x xs)))
              ,use)
 
        ;; Set ns at runtime.
-       (setq ns/current-ns ,gname)
-       (provide ,gname))))
+       (setq ns/current-ns ,ns)
+       (provide ,ns))))
 
 ;;; ================================ Font Lock =================================
 
@@ -582,7 +600,7 @@ A LOAD FORM represents an item that will be autoloaded. It is either
 (provide 'namespaces)
 
 ;; Local Variables:
-;; byte-compile-warnings: (not cl-functions)
+;; lexical-binding: t
 ;; End:
 
 ;;; namespaces.el ends here
