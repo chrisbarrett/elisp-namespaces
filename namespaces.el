@@ -287,8 +287,10 @@ Call that symbol's accessor function instead." ,sym)
       ((fboundp ',sym)  (,sym  ,@args))
       ((and (fboundp ',hash) (equal (ns-symbol-ns ,nsym) ns/current-ns)) (,hash ,@args))
       ((and (fboundp ',hash) (ns-meta-public? ,meta)) (,hash ,@args))
-      ((boundp  ',hash) (error "`%s' is a var, not a function." ',sym))
-      (t                (error "The function `%s' is not defined." ',sym)))))
+      ((boundp  ',hash) (error "`%s' is a var, not a function" ',sym))
+      ((fboundp ',hash) (error "The function `%s' is inaccessible from namespace '%s'"
+                               ',sym ns/current-ns))
+      (t                (error "The function `%s' is not defined" ',sym)))))
 
 (defmacro @set (symbol value)
   "Set the value of a namespace-qualified symbol."
