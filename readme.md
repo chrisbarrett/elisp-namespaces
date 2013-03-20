@@ -5,7 +5,7 @@ global namespace clean and protect your symbols from clobbering.
 
 Pull requests welcome.
 
-Requires Emacs 24 or later.
+Requires Emacs 24.3 or later.
 
 ## Quick Tour
 
