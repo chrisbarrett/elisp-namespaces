@@ -2,7 +2,7 @@
 ;;
 ;; Author: Chris Barrett
 ;; URL: https://github.com/chrisbarrett/elisp-namespaces
-;; Version: 1.2
+;; Version: 1.2.1
 ;;
 
 ;;; License:
