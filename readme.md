@@ -356,6 +356,10 @@ configuration.
 
 ## Gotchas and Limitations
 
+Byte-compilation sometimes fails to expand definition forms. If you
+experience issues, wrap everything after your namespace declaration in
+an `(@eval-after-load my-ns ...)`.
+
 Due to internal name-mangling, you won't be able to use features like
 eldoc or `describe-function` on symbols defined by `defn`, `def` and
 `defmutable`. However, their fully-qualified exported forms work fine.

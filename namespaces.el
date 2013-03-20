@@ -577,12 +577,16 @@ documentation for `autoload' for an explanation of these symbols.
                       (or ,@strings) (+ space)
                       (group (+ (not (any space "()[]")))))))
 
-(defconst ns/match-kw    (rx "(" (group (or "defn" "def" "defmutable"
-                                         "namespace" "in-ns" "lambda-")) space))
+(defconst ns/match-kw    (rx "("
+                             (group (or "defn" "def" "defmutable" "namespace"
+                                        "in-ns" "lambda-" "@eval-after-load"))
+                             word-end))
+
 (defconst ns/match-op    (rx "(" (group (or "@" "_" "~" "@set")) space))
 (defconst ns/match-fname (ns/match-identifier-after "defn"))
 (defconst ns/match-var   (ns/match-identifier-after "def" "defmutable"))
 (defconst ns/match-ns    (ns/match-identifier-after "namespace" "in-ns"))
+
 
 (defun ns/apply-font-lock ()
   (font-lock-add-keywords
