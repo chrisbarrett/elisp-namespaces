@@ -266,7 +266,7 @@ Returns the hash and name of the sym if if it succeeds, else nil"
 
        (cl-assert ,hash ()
                   "Symbol `%s' is undefined or inaccessible from namespace `%s`."
-                  ,symbol ns/current-ns)
+                  ',symbol ns/current-ns)
 
        (cl-assert (equal ',ns ns/current-ns) ()
                   "Invalid use of `@`. `%s' is in another namespace.
