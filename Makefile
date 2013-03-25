@@ -3,8 +3,7 @@ TESTS=./namespaces-tests.el
 
 EMACS=emacs
 FILES=-l $(SRC) -l $(TESTS)
-CMD="(ert-run-tests-batch-and-exit)"
-OPTS=-q $(FILES) --batch --eval $(CMD)
+OPTS=-q $(FILES) --batch -f ert-run-tests-batch-and-exit
 
 all: test
 
