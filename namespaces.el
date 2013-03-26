@@ -2,7 +2,7 @@
 ;;
 ;; Author: Chris Barrett
 ;; URL: https://github.com/chrisbarrett/elisp-namespaces
-;; Version: 1.2.1
+;; Version: 1.2.2
 ;;
 
 ;;; License:
@@ -349,7 +349,7 @@ Call that symbol's accessor function instead." ,sym)
 If BODY contains a call to (interactive), this will expand to
 `defun'. Otherwise it will expand to `cl-defun', permitting a
 Common Lisp-style arglist."
-  (declare (indent defun))
+  (declare (indent defun) (doc-string 3))
   (cl-assert (symbolp name))
   (cl-assert (listp arglist))
 
@@ -387,7 +387,9 @@ Common Lisp-style arglist."
 (defmacro def (symbol value &optional docstring)
   "Define SYMBOL as an immutable var in the current
 namespace. Otherwise identical to `defconst'."
+  (declare (doc-string 3))
   (cl-assert (symbolp symbol))
+
   (let* ((nsym (ns/intern ns/current-ns symbol))
          (hash (ns-symbol-hash nsym))
          (name (ns-symbol-name nsym))
@@ -411,7 +413,9 @@ namespace. Otherwise identical to `defconst'."
 (defmacro defmutable (symbol &optional value docstring)
   "Define SYMBOL as a mutable var in the current
 namespace. Otherwise identical to `defvar`."
+  (declare (doc-string 3))
   (cl-assert (symbolp symbol))
+
   (let* ((nsym (ns/intern ns/current-ns symbol))
          (hash (ns-symbol-hash nsym))
          (name (ns-symbol-name nsym))
